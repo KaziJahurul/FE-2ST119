@@ -4,10 +4,10 @@
 ## author: Yukai Yang
 ## Department of Statistics, Uppsala University
 #############################################################
-#library(devtools)
-#devtools::install_github("PyFE/FE-R", subdir="pkg")
+if(!requireNamespace("devtools")) install.packages("devtools")
+devtools::install_github("yukai-yang/FE")
 library(tidyverse)
-library(FER)
+library(FE)
 
 
 #############################################################
