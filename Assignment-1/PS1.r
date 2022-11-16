@@ -8,6 +8,7 @@ if(!requireNamespace("devtools")) install.packages("devtools")
 devtools::install_github("yukai-yang/FE")
 library(tidyverse)
 library(FE)
+library(xtable)
 
 
 #############################################################
@@ -31,6 +32,7 @@ plot(DJ_w$r_close,type='l', main='log returns of the weekly Dow Jones index',
 library(psych)
 describe(DJ_d$r_Dow_Jones)
 describe(DJ_w$r_close)
+xtable(describe(DJ_w$r_close))
 
 # 2.
 
@@ -38,6 +40,17 @@ describe(DJ_w$r_close)
 df = 4
 qqnorm(DJ_d$r_Dow_Jones)
 qqplot(rt(length(DJ_d$r_Dow_Jones),df=5),DJ_d$r_Dow_Jones)
+
+temp = DJ_d$r_Dow_Jones
+temp = (temp - mean(temp)) / sd(temp)
+qqnorm(temp)
+
+df = 5
+temp = temp * sqrt(df/(df - 2))
+qqplot(rt(length(temp), df = 5), temp)
+
+qqplot(rt(1000, df = 3), rnorm(1000))
+qqplot(rt(1000/sqrt(3), df = 3), rnorm(1000))
 
 qqnorm(DJ_w$r_close)
 qqplot(rt(length(DJ_w$r_close),df=5),DJ_d$r_Dow_Jones)
@@ -197,4 +210,4 @@ VDR(vr=DJ_w$r_close,iq=5)
 
 ## B. Testing for Return Predictability in Size Portfolios
 
-
+portcap_m
