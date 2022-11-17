@@ -5,8 +5,6 @@ library(FE)
 library(psych)
 library(knitr)
 
-View(DJ_d)
-View(DJ_w)
 
 daily <- DJ_d$r_Dow_Jones
 weekly <- DJ_w$r_close
@@ -14,7 +12,7 @@ weekly <- DJ_w$r_close
 ## No. 1
 plot1A1.1 <- ggplot(data=DJ_d) + geom_line(aes(x=1:nrow(DJ_d), y=r_Dow_Jones)) +
   labs(x='Time horizon', y='Log return', title='Dow Jones daily log returns')
-plot1A1 + theme_classic()
+plot1A1.1 + theme_classic()
 
 plot1A1.2 <- ggplot(data=DJ_w) + geom_line(aes(x=1:nrow(DJ_w), y=r_close)) +
   labs(x='Time horizon', y='Log return', title='Dow Jones weekly log returns')
@@ -67,8 +65,16 @@ qqline(std_weekly_t, col = "red")
 b = 30
 bin = 1:b/b
 r_nor = pnorm(std_daily)
-hist(r_nor) # I have smaller bins than Kai; this would have to be uniformly distributed if 0 was true
+hist(r_nor, breaks = 50) # I have smaller bins than Kai; this would have to be uniformly distributed if 0 was true
 # (that distribution of daily log returns is normal distribution)
+
+## more intuitive loop (just the first step)
+# vn <- c(1:length(bin))
+# for (i in 1:length(bin)){
+#   val = bin[i]
+#   vn[i] = sum(r_nor <= val)
+#
+# }
 
 vn = NULL
 for(val in bin) vn = c(vn,sum(r_nor <= val)) #try to compute the frequency for the bins
@@ -79,7 +85,7 @@ cat("test =",chi_test," df =",b-3," p-value =",1-pchisq(chi_test,df=b-3)) # p-va
 
 #weekly
 r_nor_w = pnorm(std_weekly)
-hist(r_nor_w)
+hist(r_nor_w, breaks=50)
 
 vn_w = NULL
 for(val in bin) vn_w = c(vn_w,sum(r_nor_w <= val)) #try to compute the frequency for the bins
@@ -93,7 +99,7 @@ df = 4
 #daily
 r_t = pt(std_daily_t,df=df)
 hist(r_t)
-vt = NULL; for(val in bin) vt = c(vt,sum(vq <= val))
+vt = NULL; for(val in bin) vt = c(vt,sum(vt <= val))
 vt = c(vt[1],diff(vt))
 test = sum((vt-length(std_daily_t)/b)**2/(length(std_daily_t)/b)) # he used the std. normal data, not for t-dist.
 cat("test =",test," df =",b-3," p-value =",1-pchisq(test,df=b-3)) # p-value = 0, reject t distr.
@@ -102,14 +108,14 @@ cat("test =",test," df =",b-3," p-value =",1-pchisq(test,df=b-3)) # p-value = 0,
 #weekly
 r_t_w = pt(std_weekly_t,df=df)
 hist(r_t_w)
-vt_w = NULL; for(val in bin) vt = c(vt_w,sum(vq <= val))
+vt_w = NULL; for(val in bin) vt_w = c(vt_w,sum(vt_w <= val))
 vt_w = c(vt[1],diff(vt_w))
-test = sum((vt-length(std_daily_t)/b)**2/(length(std_daily_t)/b))
+test = sum((vt_w-length(std_daily_t)/b)**2/(length(std_daily_t)/b))
 cat("test =",test," df =",b-3," p-value =",1-pchisq(test,df=b-3))
 
 # c) Mixture of normal distributions
 
-#arbiotrary choice
+#arbitrary choice
 alpha = 0.5
 sigma = 3.7 # this is the var of the second normal distr. and the first one is std_daily?
 
@@ -139,8 +145,10 @@ func <- function(vx){
 ##### what's happening here??
 func(c(0.15,4))
 
-optim(par=c(0.1,4),fn=func,method="BFGS") # this is not cherry-picking, this is optimizing (similar to OLS)
+res = optim(par=c(0.1,4),fn=func,method="BFGS") # this is not cherry-picking, this is optimizing (similar to OLS)
 
+res
+1-pchisq(res$value,df=b-3)
 #alpha = 0.196 irgendwas, sigma = 2.66 irgendwas --> p-value becomes bigger than 1%, best we can get
 ####
 
