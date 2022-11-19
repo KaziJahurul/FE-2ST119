@@ -1,0 +1,137 @@
+---
+title: "Report for PS 1"
+author:
+- Jack Xie
+date: ""
+output:
+  pdf_document:
+    keep_tex: yes
+  df_print: kable
+  html_document:
+    df_print: paged
+toc: no
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(FE)
+
+library(xtable)
+```
+
+# Dynamic properties of financial return series
+
+## Autocorrelation of international stock indexes
+
+```{r, results='asis'}
+# generate log returns
+lret = apply(log(index_d), 2, diff)
+
+# summarize data
+xtable(summary(lret), type='html')
+```
+
+### ACF and PACF plots
+
+This answers Part 1BQ1.
+
+```{r acf_pacf, echo=F}
+for (c in colnames(lret)){
+
+  # remove na from
+  x <- lret[!is.na(lret[,c]), c]
+
+  # plot ACf and PACF
+  acf(x, main=c)
+  pacf(x, main=c)
+}
+```
+
+### Ljung-Box Test
+
+This part answers Part 1BQ2.
+
+The Ljung-Box statistic is given by$$
+Q_{LB}(k) = T(T+2) \sum_{j=1}^k \frac{\hat \rho^2}{T-j}
+\sim \chi^2(k-p)
+$$
+
+where test
+
+$$\begin{align}
+H_0 &: \rho_1 = \rho_2 = ... = \rho_k = 0. \\
+H_1 &: \exists j \in \{1, 2, ..., k\}, \; \rho_j \ne 0.
+\end{align}$$
+
+```{r ljungbox, results='asis'}
+# Ljung-Box test function
+LB <- function(data, lag, p){
+
+  # time periods
+  T <- length(data)
+
+  # get ACF coeffs
+  rho = acf(data, lag.max=lag, plot=F)$acf
+
+  # remove 0th lag coeffs then square
+  rho_sq = rho[2:(lag+1)]**2
+
+  # test statistic
+  Q = T * (T+2) * sum(rho_sq / (T-1:lag))
+
+  # return test and p-value
+  return(list(test=Q, pval=1-pchisq(Q, df=lag-p)))
+}
+
+
+# lag periods to test
+lags <- c(10, 50, 100)
+
+# degrees of freedom df = lag - p
+# p is number of parameters estimated
+p <- 0
+
+# table of LB test statistics
+LB_tests <- matrix(nrow=length(lags), ncol=ncol(lret),
+                  dimnames=list(lag=lags, index=colnames(lret))
+                  )
+
+# table of Chi-square test p-values
+LB_pvals <- matrix(nrow=length(lags), ncol=ncol(lret),
+                   dimnames=list(lag=lags, index=colnames(lret))
+                   )
+
+# run Ljung-Box tests
+for (c in colnames(lret)){
+
+  for (i in 1:3){
+
+    # remove na from data
+    x <- lret[!is.na(lret[,c]), c]
+    LB_res <- LB(x, lag=lags[i], p)
+
+    # significance level stars
+    pval <- signif(LB_res$pval, 3)
+    for (qt in c(0.1, 0.05, 0.01)){
+      if (LB_res$pval < qt){
+        pval <- paste(pval,'*', sep='')
+      }
+    }
+
+    # save test stat and pvals
+    LB_tests[i, c] <- LB_res$test
+    LB_pvals[i, c] <- pval
+
+  }
+}
+
+comment <- paste('This table presents p-values of',
+                 'Ljung-Box tests of no autocorrelation.',
+                 'Significance levels:',
+                 '\\* p-value < 0.1,',
+                 '\\** p-value < 0.5,',
+                 '\\*** p-value <0.01.')
+
+# print(xtable(LB_pvals, caption=comment), type='html')
+```
