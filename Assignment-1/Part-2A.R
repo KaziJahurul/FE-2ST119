@@ -176,5 +176,3 @@ VDR(vr = DJ_d10, iq = 5)
 # Variance ratio test for weekly data
 VDR(vr = DJ_w4, iq = 5)
 VDR(vr = DJ_w12, iq = 5)
-
-?pnorm
