@@ -23,12 +23,12 @@ plot1A1.2 + theme_classic()
 # distr_weekly <- describe(DJ_w$r_close)
 # xtable(distr_daily)
 
-    #``{r, results='asis', message=FALSE, warning=FALSE}
-    #library(xtable)
+#``{r, results='asis', message=FALSE, warning=FALSE}
+#library(xtable)
 
-    #print(xtable(dat, caption="My table using xtable package", label="xtabletab"), comment=FALSE,
-    #      caption.placement="top", type="html")
-    #```
+#print(xtable(dat, caption="My table using xtable package", label="xtabletab"), comment=FALSE,
+#      caption.placement="top", type="html")
+#```
 
 
 distr_daily <- data.frame(describe(DJ_d$r_Dow_Jones), row.names = "Daily")
