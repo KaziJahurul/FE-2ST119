@@ -3,11 +3,14 @@
 
 library(tidyverse)
 library(FE)
+library(xtable)
 
 # 1. ####
 
 # generate log returns
+# log(P_t) - log(P_{t-1}) = log(P_t / P_{t-1}) = log(R_t)
 lret = apply(log(index_d), 2, diff)
+
 
 # summarize data
 summary(lret)
@@ -17,19 +20,22 @@ summary(lret)
 lag.max <- 10
 
 # create tables for ACF and PACF values
-acf_tab <- matrix(nrow=ncol(lret), ncol=lags,
+acf_tab <- matrix(nrow=ncol(lret), ncol=lag.max,
                   dimnames=list(index=colnames(lret),
                                 lag=1:lag.max
                                 )
                   )
-pacf_tab <- matrix(nrow=ncol(lret), ncol=lags,
+pacf_tab <- matrix(nrow=ncol(lret), ncol=lag.max,
                    dimnames=list(index=colnames(lret),
                                  lag=1:lag.max)
                    )
 
+acf_tab
+
+
 for (c in colnames(lret)){
 
-  # remove na from
+  # data for each column removing na
   x <- lret[!is.na(lret[,c]), c]
 
   # plot ACf and PACF
@@ -46,6 +52,7 @@ for (c in colnames(lret)){
 # 2. ####
 
 # Ljung-Box test function
+# See lec 2 slide 38
 LB <- function(data, lag, p){
 
   # time periods
@@ -85,7 +92,7 @@ LB_pvals <- matrix(nrow=length(lags), ncol=ncol(lret),
 # run Ljung-Box tests
 for (c in colnames(lret)){
 
-  for (i in 1:3){
+  for (i in 1:length(lags)){
 
     # remove na from data
     x <- lret[!is.na(lret[,c]), c]
