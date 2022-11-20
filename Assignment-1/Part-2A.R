@@ -52,6 +52,8 @@ LB(vx=logreturn_DJ_w, lag=50, ip=0)
 LB(vx=logreturn_DJ_w, lag=100, ip=0)
 
 ## Variance ratio test function
+
+# key slide lec 3 pg 21
 VDR = function(vr, iq){
   iTT = length(vr)
   im = floor(iTT/iq)
@@ -61,6 +63,7 @@ VDR = function(vr, iq){
   mu = mean(rr)
   sa2 = var(rr)
 
+  #
   arr = NULL
   for(iter in 1:(iT-iq+1))
     arr = c(arr,sum(rr[iter:(iter+iq-1)]))
@@ -74,6 +77,7 @@ VDR = function(vr, iq){
   VD = VD*sqrt(iT)/sa2/tmp
   VR = (VR-1)*sqrt(iT)/tmp
 
+  # returns test stats ~ N(0, 1)
   return(list(VD=VD, VR=VR))
 }
 
@@ -176,3 +180,24 @@ VDR(vr = DJ_d10, iq = 5)
 # Variance ratio test for weekly data
 VDR(vr = DJ_w4, iq = 5)
 VDR(vr = DJ_w12, iq = 5)
+
+
+
+############## Task 3 ################
+DJ_d$Year = as.character(DJ_d$Date)
+DJ_d$Year = as.integer( str_sub(DJ_d$Year,-2,-1))
+DJ_d1 = (DJ_d[DJ_d$Year>= 15 & DJ_d$Year <= 55,])
+
+### Line Plot
+ggplot()+
+  geom_line(mapping = aes( x=1:length(DJ_d1$r_Dow_Jones),
+                           y = DJ_d1$r_Dow_Jones), size=.5) +
+  labs(y='log returns', x='time horizon') +
+  ggtitle("from 1915 to 1955")
+
+
+### acf plot
+acf(DJ_d1$r_Dow_Jones, main = "ACF of Dow Jones returns from 1915 to 1955")
+
+LB(vx=DJ_d1$r_Dow_Jones, lag=10, ip=0)
+VDR(vr = DJ_d1$r_Dow_Jones, iq = 5)
