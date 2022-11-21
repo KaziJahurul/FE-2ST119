@@ -116,8 +116,8 @@ cat("test =",test," df =",b-3," p-value =",1-pchisq(test,df=b-3))
 # c) Mixture of normal distributions
 
 #arbitrary choice
-alpha = 0.5
-sigma = 3.7 # this is the var of the second normal distr. and the first one is std_daily?
+alpha = 0.4
+sigma = 2.7 # this is the var of the second normal distr. and the first one is std_daily?
 
 #daily
 mix_daily = std_daily*sqrt((1-alpha) + alpha*sigma**2) #as data is std. and needs to be multiplied with var of mixed distr.
