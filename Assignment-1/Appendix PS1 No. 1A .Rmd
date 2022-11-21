@@ -1,0 +1,42 @@
+---
+title: "Appendix PS1 No. 1A"
+author: "Rebecca"
+date: "2022-11-20"
+output:
+  html_document:
+    df_print: paged
+  df_print: kable
+  pdf_document:
+    keep_tex: yes
+toc: no
+---
+> 1
+
+```{r plot1A1.2}, echo=F}
+plot1A1.2 <- ggplot(data=DJ_w) + geom_line(aes(x=1:nrow(DJ_w), y=r_close)) +
+  labs(x='Time horizon', y='Log return', title='Dow Jones weekly log returns')
+plot1A1.2 + theme_classic()
+```
+
+> 2
+
+```{r qq normal, echo=F}
+#daily
+std_daily = (daily - mean(daily))/sd(daily) # standardize the daily return to st.norm distrib.
+qqnorm(std_daily, main = "Normal Q-Q plot for daily log returns")
+qqline(std_daily, col = "red")
+
+#weekly
+std_weekly = (weekly - mean(weekly))/sd(weekly)
+qqnorm(std_weekly, main = "Normal Q-Q plot for weekly log returns")
+qqline(std_weekly, col = "red")
+```
+
+```{r qq t daily, echo=F}
+#daily
+df = 4 # the lower the df the bigger the kurtosis
+std_daily_t = std_daily*sqrt(df/(df-2))
+qqplot(rt(length(std_daily_t), df = df), std_daily_t, ,  main = "T-distribution Q-Q plot for daily log returns", xlab = "Theoretical Quantiles", ylab = "Sample Quantiles")
+qqline(std_daily_t, col = "red")
+```
+
