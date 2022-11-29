@@ -34,22 +34,33 @@ acf(logreturn_DJ_w, main = "ACF of Weekly Dow Jones returns")
 pacf(logreturn_DJ_w, main="PACF of weekly Dow Jones returns")
 
 ### Ljung-Box test function
-LB <- function(vx,lag,ip){
-  tmp = acf(vx,lag.max=lag,plot=F)$acf
-  tmp = tmp[2:(lag+1)]**2
-  test = sum(tmp/(length(vx)-1:lag))*length(vx)*(length(vx)+2)
-  return(list(test=test, pval=1-pchisq(test,df=lag-ip)))
+LB = function(data, lag, p){
+
+  # time periods
+  T = length(data)
+
+  # get ACF coeffs
+  rho = acf(data, lag.max=lag, plot=F)$acf
+
+  # remove 0th lag coeffs then square
+  rho_sq = rho[2:(lag+1)]**2
+
+  # test statistic
+  Q = T * (T+2) * sum(rho_sq / (T-1:lag))
+
+  # return test and p-value
+  return(list(test=Q, pval=1-pchisq(Q, df=lag-p)))
 }
 
 ### Ljung-Box test for daily data
-LB(vx=logreturn_DJ_d, lag=10, ip=0)
-LB(vx=logreturn_DJ_d, lag=50, ip=0)
-LB(vx=logreturn_DJ_d, lag=100, ip=0)
+LB(logreturn_DJ_d, lag=10, p=0)
+LB(logreturn_DJ_d, lag=50, p=0)
+LB(logreturn_DJ_d, lag=100, p=0)
 
 ### Ljung-Box test for weekly data
-LB(vx=logreturn_DJ_w, lag=10, ip=0)
-LB(vx=logreturn_DJ_w, lag=50, ip=0)
-LB(vx=logreturn_DJ_w, lag=100, ip=0)
+LB(vx=logreturn_DJ_w, lag=10, p=0)
+LB(vx=logreturn_DJ_w, lag=50, p=0)
+LB(vx=logreturn_DJ_w, lag=100, p=0)
 
 ## Variance ratio test function
 
@@ -93,56 +104,73 @@ VDR(vr = logreturn_DJ_w, iq = 5)
 ###### Two-day and two-week log returns
 
 ##### generating two-day and two-week returns
-DJ_d_even = DJ_d$r_Dow_Jones[seq(2, nrow(DJ_d), 2)]
-DJ_d_odd = DJ_d$r_Dow_Jones[seq(1, nrow(DJ_d), 2)]
-DJ_w_even = DJ_w$r_close[seq(2, nrow(DJ_w), 2)]
-DJ_w_odd = DJ_w$r_close[seq(1, nrow(DJ_w), 2)]
+
+### higher aggregate data generation with overlap
+data_aggr_overlap = function(data, aggr) {
+  iTT = length(data)
+  im = floor(iTT/aggr)
+  iT = im*aggr
+  rr = data[1:iT]
+
+  arr = NULL
+  for(iter in 1:(iT-aggr+1))
+    arr = c(arr,sum(rr[iter:(iter+aggr-1)]))
+
+  return(arr)
+}
+
+### higher aggregate data generation with out overlap
+data_aggr = function(data, aggr) {
+  iTT = length(data)
+  im = floor(iTT/aggr)
+  iT = im*aggr
+  rr = data[1:iT]
+
+  arr = NULL
+  for(iter in seq(1, iT, aggr))
+    arr = c(arr, sum(rr[iter:(iter+aggr-1)]))
+
+  return(arr)
+}
+
+DJ_d_two = data_aggr(DJ_d$r_Dow_Jones, 2)
+DJ_w_two = data_aggr(DJ_w$r_close, 2)
 
 # calculate ACF and PACF
 
 # ACF and PACF values of daily data
-acf(DJ_d_even, main = "ACF of two-day Dow Jones returns")
-acf(DJ_d_odd, main = "ACF of two-day Dow Jones returns")
-pacf(DJ_d_even, main="PACF of two-day Dow Jones returns")
-pacf(DJ_d_odd, main="PACF of two-day Dow Jones returns")
+acf(DJ_d_two, main = "ACF of two-day Dow Jones returns")
+pacf(DJ_d_two, main="PACF of two-day Dow Jones returns")
 
 
 # ACF and PACF values of weekly data
-acf(DJ_w_even, main = "ACF of two-week Dow Jones returns")
-acf(DJ_w_odd, main = "ACF of two-week Dow Jones returns")
-pacf(DJ_w_even, main="PACF of two-week Dow Jones returns")
-pacf(DJ_w_odd, main="PACF of two-week Dow Jones returns")
+acf(DJ_w_two, main = "ACF of two-week Dow Jones returns")
+pacf(DJ_w_two, main="PACF of two-week Dow Jones returns")
 
 
 
 ### Ljung-Box test for two-day data
-LB(vx=DJ_d_even, lag=10, ip=0)
-LB(vx=DJ_d_even, lag=20, ip=0)
-LB(vx=DJ_d_odd, lag=10, ip=0)
-LB(vx=DJ_d_odd, lag=20, ip=0)
+LB(DJ_d_two, lag=10, p=0)
+LB(DJ_d_two, lag=20, p=0)
 
 ### Ljung-Box test for two-week data
-LB(vx=DJ_w_even, lag=10, ip=0)
-LB(vx=DJ_w_even, lag=50, ip=0)
-LB(vx=DJ_w_odd, lag=10, ip=0)
-LB(vx=DJ_w_odd, lag=50, ip=0)
+LB(DJ_w_two, lag=10, p=0)
+LB(DJ_w_two, lag=50, p=0)
 
 # Variance ratio test for daily data
-VDR(vr = DJ_d_even, iq = 5)
-VDR(vr = DJ_d_odd, iq = 5)
+VDR(vr = DJ_d_two, iq = 5)
 
 # Variance ratio test for weekly data
-VDR(vr = DJ_w_even, iq = 5)
-VDR(vr = DJ_w_odd, iq = 5)
+VDR(vr = DJ_w_two, iq = 5)
 
 
 
 ######## Higher aggregated log returns ##########
 ##### Generating Higher aggregated log returns data
-DJ_d5 = DJ_d$r_Dow_Jones[seq(1, nrow(DJ_d), 5)]
-DJ_d10 = DJ_d$r_Dow_Jones[seq(1, nrow(DJ_d), 10)]
-DJ_w4 = DJ_w$r_close[seq(1, nrow(DJ_w), 4)]
-DJ_w12 = DJ_w$r_close[seq(1, nrow(DJ_w), 12)]
+DJ_d5 = data_aggr(DJ_d$r_Dow_Jones, 5)
+DJ_d10 = data_aggr(DJ_d$r_Dow_Jones, 10)
+DJ_w4 = data_aggr(DJ_w$r_close, 4)
+DJ_w12 = data_aggr(DJ_w$r_close, 12)
 
 
 # calculate ACF and PACF
@@ -162,16 +190,16 @@ pacf(DJ_w12, main="PACF of 12-week Dow Jones returns")
 
 
 ### Ljung-Box test for 5-day and 10-day data
-LB(vx=DJ_d5, lag=10, ip=0)
-LB(vx=DJ_d5, lag=20, ip=0)
-LB(vx=DJ_d10, lag=10, ip=0)
-LB(vx=DJ_d10, lag=20, ip=0)
+LB(DJ_d5, lag=10, p=0)
+LB(DJ_d5, lag=20, p=0)
+LB(DJ_d10, lag=10, p=0)
+LB(DJ_d10, lag=20, p=0)
 
 ### Ljung-Box test for two-week data
-LB(vx=DJ_w4, lag=10, ip=0)
-LB(vx=DJ_w4, lag=50, ip=0)
-LB(vx=DJ_w12, lag=10, ip=0)
-LB(vx=DJ_w12, lag=50, ip=0)
+LB(DJ_w4, lag=10, p=0)
+LB(DJ_w4, lag=50, p=0)
+LB(DJ_w12, lag=10, p=0)
+LB(DJ_w12, lag=50, p=0)
 
 # Variance ratio test for daily data
 VDR(vr = DJ_d5, iq = 5)
@@ -186,7 +214,8 @@ VDR(vr = DJ_w12, iq = 5)
 ############## Task 3 ################
 DJ_d$Year = as.character(DJ_d$Date)
 DJ_d$Year = as.integer( str_sub(DJ_d$Year,-2,-1))
-DJ_d1 = (DJ_d[DJ_d$Year>= 15 & DJ_d$Year <= 55,])
+DJ_d1 = (DJ_d[DJ_d$Year>= 15 & DJ_d$Year <= 61,])
+DJ_d2 = (DJ_d[DJ_d$Year>= 62 & DJ_d$Year <= 90,])
 
 ### Line Plot
 ggplot()+
@@ -195,9 +224,11 @@ ggplot()+
   labs(y='log returns', x='time horizon') +
   ggtitle("from 1915 to 1955")
 
+par(mfrow)
+
 
 ### acf plot
 acf(DJ_d1$r_Dow_Jones, main = "ACF of Dow Jones returns from 1915 to 1955")
 
-LB(vx=DJ_d1$r_Dow_Jones, lag=10, ip=0)
+LB(DJ_d1$r_Dow_Jones, lag=10, p=0)
 VDR(vr = DJ_d1$r_Dow_Jones, iq = 5)
