@@ -1,0 +1,263 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+%
+\documentclass[
+]{article}
+\usepackage{amsmath,amssymb}
+\usepackage{lmodern}
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math}
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\usepackage[margin=1in]{geometry}
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\usepackage{framed}
+\definecolor{shadecolor}{RGB}{248,248,248}
+\newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{0.94,0.16,0.16}{#1}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.77,0.63,0.00}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\BuiltInTok}[1]{#1}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{0.64,0.00,0.00}{\textbf{#1}}}
+\newcommand{\ExtensionTok}[1]{#1}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\ImportTok}[1]{#1}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{#1}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\RegionMarkerTok}[1]{#1}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\usepackage{graphicx}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+% Set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\ifLuaTeX
+  \usepackage{selnolig}  % disable illegal ligatures
+\fi
+\IfFileExists{bookmark.sty}{\usepackage{bookmark}}{\usepackage{hyperref}}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same} % disable monospaced font for URLs
+\hypersetup{
+  pdftitle={Report for PS 1},
+  pdfauthor={Jack Xie},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+
+\title{Report for PS 1}
+\author{Jack Xie}
+\date{}
+
+\begin{document}
+\maketitle
+
+\hypertarget{dynamic-properties-of-financial-return-series}{%
+\section{Dynamic properties of financial return
+series}\label{dynamic-properties-of-financial-return-series}}
+
+\hypertarget{autocorrelation-of-international-stock-indexes}{%
+\subsection{Autocorrelation of international stock
+indexes}\label{autocorrelation-of-international-stock-indexes}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# generate log returns}
+\NormalTok{lret }\OtherTok{=} \FunctionTok{apply}\NormalTok{(}\FunctionTok{log}\NormalTok{(index\_d), }\DecValTok{2}\NormalTok{, diff)}
+
+\CommentTok{\# summarize data}
+\FunctionTok{xtable}\NormalTok{(}\FunctionTok{summary}\NormalTok{(lret), }\AttributeTok{type=}\StringTok{\textquotesingle{}html\textquotesingle{}}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\% latex table generated in R 4.1.1 by xtable 1.8-4 package \% Thu Dec 1
+02:07:22 2022
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{rlllllll}
+  \hline
+ &    DAXINDX &    FRCAC40 &    FTSE100 &    HNGKNGI &     NIKKEI &    SNGALLS &     SPCOMP \\ 
+  \hline
+X & Min.   :-0.1370990   & Min.   :-0.1014   & Min.   :-0.1302860   & Min.   :-0.4054220   & Min.   :-1.614e-01   & Min.   :-0.0940305   & Min.   :-0.2283303   \\ 
+  X.1 & 1st Qu.:-0.0053976   & 1st Qu.:-0.0060   & 1st Qu.:-0.0045157   & 1st Qu.:-0.0053347   & 1st Qu.:-6.014e-03   & 1st Qu.:-0.0041041   & 1st Qu.:-0.0033884   \\ 
+  X.2 & Median : 0.0002581   & Median : 0.0000   & Median : 0.0002738   & Median : 0.0002220   & Median : 0.000e+00   & Median : 0.0000000   & Median : 0.0003843   \\ 
+  X.3 & Mean   : 0.0003493   & Mean   : 0.0003   & Mean   : 0.0004102   & Mean   : 0.0005713   & Mean   : 4.991e-05   & Mean   : 0.0001921   & Mean   : 0.0004885   \\ 
+  X.4 & 3rd Qu.: 0.0070188   & 3rd Qu.: 0.0069   & 3rd Qu.: 0.0058174   & 3rd Qu.: 0.0079703   & 3rd Qu.: 6.380e-03   & 3rd Qu.: 0.0047405   & 3rd Qu.: 0.0049146   \\ 
+  X.5 & Max.   : 0.0728754   & Max.   : 0.0823   & Max.   : 0.0759697   & Max.   : 0.1724710   & Max.   : 1.243e-01   & Max.   : 0.1431300   & Max.   : 0.0870888   \\ 
+  X.6 &  & NA's   :393   &  &  &  &  &  \\ 
+   \hline
+\end{tabular}
+\end{table}
+
+\hypertarget{acf-and-pacf-plots}{%
+\subsubsection{ACF and PACF plots}\label{acf-and-pacf-plots}}
+
+This answers Part 1BQ1.
+
+\includegraphics{PS1_Jack_files/figure-latex/acf_pacf-1.pdf}
+\includegraphics{PS1_Jack_files/figure-latex/acf_pacf-2.pdf}
+\includegraphics{PS1_Jack_files/figure-latex/acf_pacf-3.pdf}
+\includegraphics{PS1_Jack_files/figure-latex/acf_pacf-4.pdf}
+\includegraphics{PS1_Jack_files/figure-latex/acf_pacf-5.pdf}
+\includegraphics{PS1_Jack_files/figure-latex/acf_pacf-6.pdf}
+\includegraphics{PS1_Jack_files/figure-latex/acf_pacf-7.pdf}
+\includegraphics{PS1_Jack_files/figure-latex/acf_pacf-8.pdf}
+\includegraphics{PS1_Jack_files/figure-latex/acf_pacf-9.pdf}
+\includegraphics{PS1_Jack_files/figure-latex/acf_pacf-10.pdf}
+\includegraphics{PS1_Jack_files/figure-latex/acf_pacf-11.pdf}
+\includegraphics{PS1_Jack_files/figure-latex/acf_pacf-12.pdf}
+\includegraphics{PS1_Jack_files/figure-latex/acf_pacf-13.pdf}
+\includegraphics{PS1_Jack_files/figure-latex/acf_pacf-14.pdf}
+
+\hypertarget{ljung-box-test}{%
+\subsubsection{Ljung-Box Test}\label{ljung-box-test}}
+
+This part answers Part 1BQ2.
+
+The Ljung-Box statistic is given by\[
+Q_{LB}(k) = T(T+2) \sum_{j=1}^k \frac{\hat \rho^2}{T-j}
+\sim \chi^2(k-p)
+\]
+
+where test
+
+\[\begin{align}
+H_0 &: \rho_1 = \rho_2 = ... = \rho_k = 0. \\
+H_1 &: \exists j \in \{1, 2, ..., k\}, \; \rho_j \ne 0.
+\end{align}\]
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Ljung{-}Box test function}
+\NormalTok{LB }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(data, lag, p)\{}
+
+  \CommentTok{\# time periods}
+\NormalTok{  T }\OtherTok{\textless{}{-}} \FunctionTok{length}\NormalTok{(data)}
+
+  \CommentTok{\# get ACF coeffs}
+\NormalTok{  rho }\OtherTok{=} \FunctionTok{acf}\NormalTok{(data, }\AttributeTok{lag.max=}\NormalTok{lag, }\AttributeTok{plot=}\NormalTok{F)}\SpecialCharTok{$}\NormalTok{acf}
+
+  \CommentTok{\# remove 0th lag coeffs then square}
+\NormalTok{  rho\_sq }\OtherTok{=}\NormalTok{ rho[}\DecValTok{2}\SpecialCharTok{:}\NormalTok{(lag}\SpecialCharTok{+}\DecValTok{1}\NormalTok{)]}\SpecialCharTok{**}\DecValTok{2}
+
+  \CommentTok{\# test statistic}
+\NormalTok{  Q }\OtherTok{=}\NormalTok{ T }\SpecialCharTok{*}\NormalTok{ (T}\SpecialCharTok{+}\DecValTok{2}\NormalTok{) }\SpecialCharTok{*} \FunctionTok{sum}\NormalTok{(rho\_sq }\SpecialCharTok{/}\NormalTok{ (T}\DecValTok{{-}1}\SpecialCharTok{:}\NormalTok{lag))}
+
+  \CommentTok{\# return test and p{-}value}
+  \FunctionTok{return}\NormalTok{(}\FunctionTok{list}\NormalTok{(}\AttributeTok{test=}\NormalTok{Q, }\AttributeTok{pval=}\DecValTok{1}\SpecialCharTok{{-}}\FunctionTok{pchisq}\NormalTok{(Q, }\AttributeTok{df=}\NormalTok{lag}\SpecialCharTok{{-}}\NormalTok{p)))}
+\NormalTok{\}}
+
+
+\CommentTok{\# lag periods to test}
+\NormalTok{lags }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(}\DecValTok{10}\NormalTok{, }\DecValTok{50}\NormalTok{, }\DecValTok{100}\NormalTok{)}
+
+\CommentTok{\# degrees of freedom df = lag {-} p}
+\CommentTok{\# p is number of parameters estimated}
+\NormalTok{p }\OtherTok{\textless{}{-}} \DecValTok{0}
+
+\CommentTok{\# table of LB test statistics}
+\NormalTok{LB\_tests }\OtherTok{\textless{}{-}} \FunctionTok{matrix}\NormalTok{(}\AttributeTok{nrow=}\FunctionTok{length}\NormalTok{(lags), }\AttributeTok{ncol=}\FunctionTok{ncol}\NormalTok{(lret),}
+                  \AttributeTok{dimnames=}\FunctionTok{list}\NormalTok{(}\AttributeTok{lag=}\NormalTok{lags, }\AttributeTok{index=}\FunctionTok{colnames}\NormalTok{(lret))}
+\NormalTok{                  )}
+
+\CommentTok{\# table of Chi{-}square test p{-}values}
+\NormalTok{LB\_pvals }\OtherTok{\textless{}{-}} \FunctionTok{matrix}\NormalTok{(}\AttributeTok{nrow=}\FunctionTok{length}\NormalTok{(lags), }\AttributeTok{ncol=}\FunctionTok{ncol}\NormalTok{(lret),}
+                   \AttributeTok{dimnames=}\FunctionTok{list}\NormalTok{(}\AttributeTok{lag=}\NormalTok{lags, }\AttributeTok{index=}\FunctionTok{colnames}\NormalTok{(lret))}
+\NormalTok{                   )}
+
+\CommentTok{\# run Ljung{-}Box tests}
+\ControlFlowTok{for}\NormalTok{ (c }\ControlFlowTok{in} \FunctionTok{colnames}\NormalTok{(lret))\{}
+
+  \ControlFlowTok{for}\NormalTok{ (i }\ControlFlowTok{in} \DecValTok{1}\SpecialCharTok{:}\DecValTok{3}\NormalTok{)\{}
+
+    \CommentTok{\# remove na from data}
+\NormalTok{    x }\OtherTok{\textless{}{-}}\NormalTok{ lret[}\SpecialCharTok{!}\FunctionTok{is.na}\NormalTok{(lret[,c]), c]}
+\NormalTok{    LB\_res }\OtherTok{\textless{}{-}} \FunctionTok{LB}\NormalTok{(x, }\AttributeTok{lag=}\NormalTok{lags[i], p)}
+
+    \CommentTok{\# significance level stars}
+\NormalTok{    pval }\OtherTok{\textless{}{-}} \FunctionTok{signif}\NormalTok{(LB\_res}\SpecialCharTok{$}\NormalTok{pval, }\DecValTok{3}\NormalTok{)}
+    \ControlFlowTok{for}\NormalTok{ (qt }\ControlFlowTok{in} \FunctionTok{c}\NormalTok{(}\FloatTok{0.1}\NormalTok{, }\FloatTok{0.05}\NormalTok{, }\FloatTok{0.01}\NormalTok{))\{}
+      \ControlFlowTok{if}\NormalTok{ (LB\_res}\SpecialCharTok{$}\NormalTok{pval }\SpecialCharTok{\textless{}}\NormalTok{ qt)\{}
+\NormalTok{        pval }\OtherTok{\textless{}{-}} \FunctionTok{paste}\NormalTok{(pval,}\StringTok{\textquotesingle{}*\textquotesingle{}}\NormalTok{, }\AttributeTok{sep=}\StringTok{\textquotesingle{}\textquotesingle{}}\NormalTok{)}
+\NormalTok{      \}}
+\NormalTok{    \}}
+
+    \CommentTok{\# save test stat and pvals}
+\NormalTok{    LB\_tests[i, c] }\OtherTok{\textless{}{-}}\NormalTok{ LB\_res}\SpecialCharTok{$}\NormalTok{test}
+\NormalTok{    LB\_pvals[i, c] }\OtherTok{\textless{}{-}}\NormalTok{ pval}
+
+\NormalTok{  \}}
+\NormalTok{\}}
+
+\NormalTok{comment }\OtherTok{\textless{}{-}} \FunctionTok{paste}\NormalTok{(}\StringTok{\textquotesingle{}This table presents p{-}values of\textquotesingle{}}\NormalTok{,}
+                 \StringTok{\textquotesingle{}Ljung{-}Box tests of no autocorrelation.\textquotesingle{}}\NormalTok{,}
+                 \StringTok{\textquotesingle{}Significance levels:\textquotesingle{}}\NormalTok{,}
+                 \StringTok{\textquotesingle{}}\SpecialCharTok{\textbackslash{}\textbackslash{}}\StringTok{* p{-}value \textless{} 0.1,\textquotesingle{}}\NormalTok{,}
+                 \StringTok{\textquotesingle{}}\SpecialCharTok{\textbackslash{}\textbackslash{}}\StringTok{** p{-}value \textless{} 0.5,\textquotesingle{}}\NormalTok{,}
+                 \StringTok{\textquotesingle{}}\SpecialCharTok{\textbackslash{}\textbackslash{}}\StringTok{*** p{-}value \textless{}0.01.\textquotesingle{}}\NormalTok{)}
+
+\CommentTok{\# print(xtable(LB\_pvals, caption=comment), type=\textquotesingle{}html\textquotesingle{})}
+\end{Highlighting}
+\end{Shaded}
+
+
+\end{document}

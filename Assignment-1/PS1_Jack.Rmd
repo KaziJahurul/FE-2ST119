@@ -4,11 +4,11 @@ author:
 - Jack Xie
 date: ""
 output:
-  pdf_document:
-    keep_tex: yes
-  df_print: kable
   html_document:
     df_print: paged
+  df_print: kable
+  pdf_document:
+    keep_tex: yes
 toc: no
 ---
 

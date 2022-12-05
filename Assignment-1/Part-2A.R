@@ -5,6 +5,7 @@ library(FE)
 ls( grep("FE", search()) )
 library(tidyverse)
 library(psych)
+library(tseries)
 library(kableExtra)
 
 
@@ -24,16 +25,20 @@ describe(DJ_w$r_close)
 
 # calculate ACF and PACF
 
-# ACF and PACF values of daily data
+# ACF and PACF plots of daily data
 acf(logreturn_DJ_d, main = "ACF of daily Dow Jones returns")
 pacf(logreturn_DJ_d, main="PACF of daily Dow Jones returns")
 
 
-# ACF and PACF values of weekly data
+# ACF and PACF plots of weekly data
 acf(logreturn_DJ_w, main = "ACF of Weekly Dow Jones returns")
 pacf(logreturn_DJ_w, main="PACF of weekly Dow Jones returns")
 
-### Ljung-Box test function
+# Calculating autocorrelation
+acf(logreturn_DJ_d, lag = 5, pl = FALSE)
+acf(logreturn_DJ_w, lag = 5, pl = FALSE)
+
+### Ljung-Box test function copy of Jacks LB function
 LB = function(data, lag, p){
 
   # time periods
@@ -223,8 +228,6 @@ ggplot()+
                            y = DJ_d1$r_Dow_Jones), size=.5) +
   labs(y='log returns', x='time horizon') +
   ggtitle("from 1915 to 1955")
-
-par(mfrow)
 
 
 ### acf plot

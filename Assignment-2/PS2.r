@@ -16,6 +16,7 @@ library(FE)
 portfolio_m
 data("portfolio_m")
 ?factors_m
+help("portfolio_m")
 
 
 # use function Fara_MacBeth

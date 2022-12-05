@@ -1,0 +1,81 @@
+---
+title: "Report for PS 1"
+author:
+- Jack Xie
+- Rebecca Car
+- Kazi Jahurul Islam
+date: ""
+header-includes:
+   - \usepackage{bbm}
+output:
+  pdf_document:
+    keep_tex: yes
+  df_print: kable
+  html_document:
+    df_print: paged
+toc: no
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library("FE")
+library(psych)
+library(kableExtra)
+```
+
+
+
+#  Asset Return Predictability and Market Efficiency
+
+## Testing for asset return predictability
+
+In this part of the report we are going to discuss the test for asset return predictability based on autocorrelation functions, Ljung-Box statistics and variance ratio tests using the \textbf{Dow Jones Daily} and \textbf{Dow Jones Weekly} data set.
+
+
+```{r, echo=FALSE}
+############## Task 1. #################
+logreturn_DJ_d = DJ_d$r_Dow_Jones[!is.na(DJ_d$r_Dow_Jones)]
+logreturn_DJ_w = DJ_w$r_close[!is.na(DJ_w$r_close)]
+par(mfrow=c(2,2))
+# ACF and PACF values of daily data
+acf(logreturn_DJ_d, main = "ACF of daily Dow Jones returns")
+pacf(logreturn_DJ_d, main="PACF of daily Dow Jones returns")
+
+# ACF and PACF values of weekly data
+acf(logreturn_DJ_w, main = "ACF of Weekly Dow Jones returns")
+pacf(logreturn_DJ_w, main="PACF of weekly Dow Jones returns")
+```
+
+In the above figures we observe significant lags from the \textbf{ACF} and \textbf{PACF} plot for both \textbf{Dow Jones Daily} and \textbf{Dow Jones Weekly} data. Which is the indication of autocorrealatios. 
+
+Now at this point we are going to apply Lung-Box and variance ratio test to check autocorrelation for both data set. The results are presented below:
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
