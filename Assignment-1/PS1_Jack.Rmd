@@ -16,32 +16,52 @@ toc: no
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(FE)
+library(psych)
+library(knitr)
+
+
 
 library(xtable)
 ```
 
 # Dynamic properties of financial return series
 
-## Autocorrelation of international stock indexes
-
-Summary statistics of international stock indexes.
+Please see below for some summary statistics of the international stock indexes.
 
 ```{r, results='asis'}
-
 # generate log returns
 lret = apply(log(index_d), 2, diff)
 
 # summarize data
-xtable(summary(lret))
+descr <- describe(lret)
+descr <- descr[, c("n", "mean", "sd", "median", "min", "max", "skew", "kurtosis")]
+
+xtable(descr)
 ```
 
-### ACF and PACF plots
+## Autocorrelation of international stock indexes
 
 This answers Part 1BQ1.
 
+### ACF and PACF Background
+
+Below we plot the **autocorrelation functions (ACF)** and partial **autocorrelation functions (PACF)** of each series with 20 lags. The blue line indicates the 95% confidence level of the coefficients.
+
+For each lag period $k$, the **ACF** plot shows the autocorrelation of $y_t$ and $y_{t+k}$. The significance of the ACF coefficients reveals whether $y_t$ exhibits behavior of an **autoregressive (AR)** process.
+
+For each lag period $k$, the **PACF** plot shows the the autocorrelation of series $z_t$ and $z_{t+k}$ with the linear dependence of $z_t$ on $z_{t+1}, z_{t+2}, …, z_{t+k}$ removed. The significance of the PACF coefficients tell reveals whether $y_t$ exhibits behavior of a **moving average (MA)** process.
+
+### ACF and PAC Results
+
+The indices **DAXINDX**, **FRCAC40, NIKKEI,** and **SPCOMP** exhibit no autocorrelation as the lag coefficients on the ACF plots are mostly non-significant.
+
+**HNGKNGI** and **SNGALLS** exhibit tailing off in the ACF plot. Then these series may be modeled with an AR model. Therefore, these series may be autocorrelated.
+
+**FTSE100** exhibits some tailing off in the ACF and PACF plots, and may be modeled with an ARMA model. Therefore, this index may be autocorrelated.
+
 ```{r acf_pacf, results='asis'}
 
-acf_tabs <- function(data, lag.max=10, plot=T){
+acf_tabs <- function(data, lag.max=20, plot=T){
 
   # create tables for ACF and PACF values
   acf_tab <- matrix(nrow=ncol(data), ncol=lag.max,
@@ -53,12 +73,18 @@ acf_tabs <- function(data, lag.max=10, plot=T){
                      dimnames=list(index=colnames(data),
                                    lag=1:lag.max)
   )
-
+  
   for (c in colnames(data)){
 
     # data for each column removing na
     x <- data[!is.na(data[,c]), c]
 
+    
+    if (plot){
+    # two columns for ACF and PACF
+    par(mfcol=c(1, 2))
+    }
+    
     # plot ACf and PACF
     acf_val <- acf(x, main=c, plot=plot)
     pacf_val <- pacf(x, main=c, plot=plot)
@@ -80,9 +106,7 @@ xtable(t(tabs$acf))
 xtable(t(tabs$pacf))
 ```
 
-From the ACF and PACF tables, we can see that there are some indicators of autocorrelation in the indexes.
-
-### Ljung-Box Test
+## Ljung-Box Test
 
 This part answers Part 1BQ2.
 
@@ -178,8 +202,6 @@ For **DAXINDX,** we can reject no autocorrelation with $k=50$ lags at the 5% lev
 
 For **FRCAC40**, we cannot reject no autocorrelation at any lags $k \in \{10, 50, 100\}$ at the 10% quantile level. Therefore, there is little evidence of autocorrelation in the FRCAC40 index.
 
-
-
 ## Cross-correlations
 
 ```{r corr_mat, results='asis'}
@@ -219,7 +241,6 @@ corr_mat <- function(data, lag=1) {
 xtable(corr_mat(lret, lag=0))
 xtable(corr_mat(lret, lag=1))
 ```
-
 
 ## Squared log returns
 
