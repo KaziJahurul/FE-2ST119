@@ -15,39 +15,41 @@ lret = apply(log(index_d), 2, diff)
 # summarize data
 summary(lret)
 
-
 # calculate ACF and PACF
-lag.max <- 10
 
-# create tables for ACF and PACF values
-acf_tab <- matrix(nrow=ncol(lret), ncol=lag.max,
-                  dimnames=list(index=colnames(lret),
-                                lag=1:lag.max
-                                )
-                  )
-pacf_tab <- matrix(nrow=ncol(lret), ncol=lag.max,
-                   dimnames=list(index=colnames(lret),
-                                 lag=1:lag.max)
-                   )
+acf_tabs <- function(data, lag.max=10, plot=T){
 
-acf_tab
+  # create tables for ACF and PACF values
+  acf_tab <- matrix(nrow=ncol(data), ncol=lag.max,
+                    dimnames=list(index=colnames(data),
+                                  lag=1:lag.max
+                    )
+  )
+  pacf_tab <- matrix(nrow=ncol(data), ncol=lag.max,
+                     dimnames=list(index=colnames(data),
+                                   lag=1:lag.max)
+  )
 
+  for (c in colnames(data)){
 
-for (c in colnames(lret)){
+    # data for each column removing na
+    x <- data[!is.na(data[,c]), c]
 
-  # data for each column removing na
-  x <- lret[!is.na(lret[,c]), c]
+    # plot ACf and PACF
+    acf_val <- acf(x, main=c, plot=plot)
+    pacf_val <- pacf(x, main=c, plot=plot)
 
-  # plot ACf and PACF
-  acf_val <- acf(x, main=c)
-  pacf_val <- pacf(x, main=c)
+    # save coefficients
+    acf_tab[c, ] <- acf_val$acf[2:(lag.max+1)]
+    pacf_tab[c, ] <- pacf_val$acf[1:lag.max]
 
-  # save coefficients
-  acf_tab[c, ] <- acf_val$acf[2:(lag.max+1)]
-  pacf_tab[c, ] <- pacf_val$acf[1:lag.max]
+  }
+
+  return(list(acf=acf_tab, pacf=pacf_tab))
 
 }
 
+acf_tabs(lret)
 
 # 2. ####
 
@@ -125,34 +127,44 @@ print(xtable(LB_pvals, caption=comment), type='html')
 
 # 3. ####
 
-# column names
-cols <- colnames(lret)
+corr_mat <- function(data, lag=1) {
 
-# correlation matrix
-corr_mat <- matrix(nrow = ncol(lret), ncol = ncol(lret),
-                   dimnames=list(lag_lret=cols, lret=cols))
+  # column names
+  cols <- colnames(data)
 
-for (c1 in cols){
-  for (c0 in cols){
-    # periods with either are NA
-    isna <- (is.na(lret[, c1]) | is.na(lret[, c0]))
+  # correlation matrix
+  corr_mat <- matrix(nrow = ncol(data), ncol = ncol(data),
+                     dimnames=list(lags=cols, cols))
 
-    # non-na returns of pair
-    pair_data <- lret[!isna, c(c1, c0)]
-    T <- nrow(pair_data)
+  for (c1 in cols){
+    for (c0 in cols){
+      # periods with either are NA
+      isna <- (is.na(data[, c1]) | is.na(data[, c0]))
 
-    # add period lag autocorrelation to matrix
-    lag <- 1
-    corr_mat[c1, c0] <- cor(pair_data[1:(T-lag),c1], pair_data[(1+lag):T,c0])
+      # non-na returns of pair
+      pair_data <- data[!isna, c(c1, c0)]
+      T <- nrow(pair_data)
 
-    # acf(pair_data)
-    # pacf(pair_data)
+      # add period lag autocorrelation to matrix
+      corr_mat[c1, c0] <- cor(pair_data[1:(T-lag),c1], pair_data[(1+lag):T,c0])
+
+      # acf(pair_data)
+      # pacf(pair_data)
+    }
   }
+
+  # re-label past/current period returns
+  rownames(corr_mat) <- paste(cols, '(t-1)', sep='')
+  colnames(corr_mat) <- paste(cols, '(t)', sep='')
+
+  return(corr_mat)
+
 }
 
-# re-label past/current period returns
-rownames(corr_mat) <- paste(cols, '(t-1)', sep='')
-colnames(corr_mat) <- paste(cols, '(t)', sep='')
+corr_mat(lret)
 
-corr_mat
+# 4.
+sqlret = lret^2
 
+
+acf_tab(sqlret)

@@ -4,11 +4,11 @@ author:
 - Jack Xie
 date: ""
 output:
-  pdf_document:
-    keep_tex: yes
-  df_print: kable
   html_document:
     df_print: paged
+  df_print: kable
+  pdf_document:
+    keep_tex: yes
 toc: no
 ---
 
@@ -24,29 +24,63 @@ library(xtable)
 
 ## Autocorrelation of international stock indexes
 
+Summary statistics of international stock indexes.
+
 ```{r, results='asis'}
+
 # generate log returns
 lret = apply(log(index_d), 2, diff)
 
 # summarize data
-xtable(summary(lret), type='html')
+xtable(summary(lret))
 ```
 
 ### ACF and PACF plots
 
 This answers Part 1BQ1.
 
-```{r acf_pacf, echo=F}
-for (c in colnames(lret)){
+```{r acf_pacf, results='asis'}
 
-  # remove na from
-  x <- lret[!is.na(lret[,c]), c]
+acf_tabs <- function(data, lag.max=10, plot=T){
 
-  # plot ACf and PACF
-  acf(x, main=c)
-  pacf(x, main=c)
+  # create tables for ACF and PACF values
+  acf_tab <- matrix(nrow=ncol(data), ncol=lag.max,
+                    dimnames=list(index=colnames(data),
+                                  lag=1:lag.max
+                    )
+  )
+  pacf_tab <- matrix(nrow=ncol(data), ncol=lag.max,
+                     dimnames=list(index=colnames(data),
+                                   lag=1:lag.max)
+  )
+
+  for (c in colnames(data)){
+
+    # data for each column removing na
+    x <- data[!is.na(data[,c]), c]
+
+    # plot ACf and PACF
+    acf_val <- acf(x, main=c, plot=plot)
+    pacf_val <- pacf(x, main=c, plot=plot)
+
+    # save coefficients
+    acf_tab[c, ] <- acf_val$acf[2:(lag.max+1)]
+    pacf_tab[c, ] <- pacf_val$acf[1:lag.max]
+
+  }
+
+  return(list(acf=acf_tab, pacf=pacf_tab))
+
 }
+
+tabs = acf_tabs(lret)
+
+xtable(t(tabs$acf))
+
+xtable(t(tabs$pacf))
 ```
+
+From the ACF and PACF tables, we can see that there are some indicators of autocorrelation in the indexes.
 
 ### Ljung-Box Test
 
@@ -57,12 +91,14 @@ Q_{LB}(k) = T(T+2) \sum_{j=1}^k \frac{\hat \rho^2}{T-j}
 \sim \chi^2(k-p)
 $$
 
-where test
+which tests the null hypothesis of no autocorrelation,
 
 $$\begin{align}
 H_0 &: \rho_1 = \rho_2 = ... = \rho_k = 0. \\
 H_1 &: \exists j \in \{1, 2, ..., k\}, \; \rho_j \ne 0.
 \end{align}$$
+
+We present the p-values of the Ljung-Box test for each index with $k \in \{10, 50, 100\}$ lags below, with degrees of freedom $d = k - 2$.
 
 ```{r ljungbox, results='asis'}
 # Ljung-Box test function
@@ -133,5 +169,62 @@ comment <- paste('This table presents p-values of',
                  '\\** p-value < 0.5,',
                  '\\*** p-value <0.01.')
 
-# print(xtable(LB_pvals, caption=comment), type='html')
+xtable(LB_pvals, caption=comment)
+```
+
+From the p-value of the test results, for all lag orders $k \in \{10, 50, 100\}$ we can reject the null of no autocorrelation for the **FTSE100, HNGKNGI, NIKKEI, SNGALLS,** and **SPCOMP** at less than the 1% quantile level of the Chi-squared distribution. Therefore, there is some strong evidence of autocorrelation in these indices.
+
+For **DAXINDX,** we can reject no autocorrelation with $k=50$ lags at the 5% level with $k = 100$ lags at the 5% quantile level of the Chi-squared distribution. There is some evidence that the DAX is auto-correlated, but only at high lag orders.
+
+For **FRCAC40**, we cannot reject no autocorrelation at any lags $k \in \{10, 50, 100\}$ at the 10% quantile level. Therefore, there is little evidence of autocorrelation in the FRCAC40 index.
+
+
+
+## Cross-correlations
+
+```{r corr_mat, results='asis'}
+corr_mat <- function(data, lag=1) {
+  # column names
+  cols <- colnames(data)
+
+  # correlation matrix
+  corr_mat <- matrix(nrow = ncol(data), ncol = ncol(data),
+                     dimnames=list(lags=cols, cols))
+
+  for (c1 in cols){
+    for (c0 in cols){
+      # periods with either are NA
+      isna <- (is.na(data[, c1]) | is.na(data[, c0]))
+
+      # non-na returns of pair
+      pair_data <- data[!isna, c(c1, c0)]
+      T <- nrow(pair_data)
+
+      # add period lag autocorrelation to matrix
+      corr_mat[c1, c0] <- cor(pair_data[1:(T-lag),c1], pair_data[(1+lag):T,c0])
+
+      # acf(pair_data)
+      # pacf(pair_data)
+    }
+  }
+
+  # re-label past/current period returns
+  rownames(corr_mat) <- paste(cols, '(t-1)', sep='')
+  colnames(corr_mat) <- paste(cols, '(t)', sep='')
+
+  return(corr_mat)
+
+}
+
+xtable(corr_mat(lret, lag=0))
+xtable(corr_mat(lret, lag=1))
+```
+
+
+## Squared log returns
+
+This subsection answers Part 1BQ4
+
+```{r sq_lret, results='asis'}
+sq_lret = lret^2
 ```
