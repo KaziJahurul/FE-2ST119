@@ -25,40 +25,78 @@ weekly <- DJ_w$r_close
 ### Distributional properties of Dow Jones index returns
 > 1)
 
+The Dow Jones is a stock market index of 30 prominent companies listed on stock exchanges in the United States and one of the oldest and most commonly followed equity indexes. Due to several beneficial properties such as symmetry and time-additivity and the fact that they can be interpreted as continuously compunded returns, logarithmic returns of the Dow Jones are considered here. When plotted over time in Figure ???, the time series of daily log returns appears at first sight to be more stationary than non-stationary. One remarkable feature of the series is the larger variance between 1928-1940. This can probably be explained by the financial crisis that started in 1928 and after that, by the beginning of World War II. The same pattern can naturally also be observed for the weekly log returns (see Appendix).
+
 ```{r plot1A1.1, echo=F}
 plot1A1.1 <- ggplot(data=DJ_d) + geom_line(aes(x=1:nrow(DJ_d), y=r_Dow_Jones)) +
   labs(x='Time horizon', y='Log return', title='Dow Jones daily log returns')
 plot1A1.1 + theme_classic()
 ```
 
-For both: mention variance spikes (at same time? that's what i need proper labels for), hard to say anything about the time series' property, looks stationary but can't say.
+The distributional parameters of the time series show that 
+Remarkable: high kurtosis, weekly is much more skewed
+Add histograms?
+
+#### Table of distributional parameters
 ```{r distrib prop, echo=F}
 distr_daily <- data.frame(describe(DJ_d$r_Dow_Jones), row.names = "Daily")
 distr_weekly <- data.frame(describe(DJ_w$r_close), row.names = "Weekly")
 
 dat.df <- t(rbind.data.frame(distr_daily, distr_weekly))
-kable(dat.df)
-# mad = median absolute deviation from the median)
+kable(dat.df[c("n", "mean", "sd", "median", "min", "max", "skew", "kurtosis"), ])
 ```
 
 > 2)
 
+```{r qq normal, echo=F}
+#daily
+std_daily = (daily - mean(daily))/sd(daily) # standardize the daily return to st.norm distrib.
+qqnorm(std_daily, main = "Normal Q-Q plot for daily log returns")
+qqline(std_daily, col = "red")
+
+#weekly
+std_weekly = (weekly - mean(weekly))/sd(weekly)
+qqnorm(std_weekly, main = "Normal Q-Q plot for weekly log returns")
+qqline(std_weekly, col = "red")
+```
+
+```{r qq t daily, echo=F}
+#daily
+df = 3 # the lower the df the bigger the kurtosis
+std_daily_t = std_daily*sqrt(df/(df-2))
+qqplot(rt(length(std_daily_t), df = df), std_daily_t, ,  main = "T-distribution Q-Q plot for daily log returns", xlab = "Theoretical Quantiles", ylab = "Sample Quantiles")
+qqline(std_daily_t, col = "red")
+```
+
 ```{r qq t weekly, echo=F}
 #weekly
+df=3 #because we need two parameters to normalize the data (mean and std dev)
+std_daily = (daily - mean(daily))/sd(daily)
+std_weekly = (weekly - mean(weekly))/sd(weekly)
+std_daily_t = std_daily*sqrt(df/(df-2))
+
 std_weekly_t = std_weekly*sqrt(df/(df-2))
 qqplot(rt(length(std_weekly_t), df = df), std_weekly_t,  main = "T-distribution Q-Q plot for weekly log returns", xlab = "Theoretical Quantiles", ylab = "Sample Quantiles")
 qqline(std_weekly_t, col = "red")
 ```
 
+None of the distributions fit well, the one that fits the best is the t distr. Even here, tails don't fit, point towards a distrib. with higher kurtosis. (put all QQ plots next to each other)
+
 > 3)
 
 ```{r test normal, echo=F}
+
+test_tab <- matrix(nrow=2, ncol=2)
+rownames(test_tab) <- c('Daily', 'Weekly')
+colnames(test_tab) <- c('Normal', 'Student t (df=4')
+
+
 b = 30
 bin = 1:b/b
 
 #daily
 r_nor = pnorm(std_daily)
-hist(r_nor, breaks = 50)
+#hist(r_nor, breaks = 50)
 
 vn = NULL
 for(val in bin) vn = c(vn,sum(r_nor <= val)) 
@@ -66,15 +104,19 @@ vn = c(vn[1],diff(vn))
 chi_test = sum((vn-length(std_daily)/b)**2/(length(std_daily)/b))
 cat("test =",chi_test," df =",b-3," p-value =",1-pchisq(chi_test,df=b-3))
 
+test_tab[1, 1] <- chi_test
+
 #weekly
 r_nor_w = pnorm(std_weekly)
-hist(r_nor_w, breaks=50)
+#hist(r_nor_w, breaks=50)
 
 vn_w = NULL
 for(val in bin) vn_w = c(vn_w,sum(r_nor_w <= val)) #try to compute the frequency for the bins
 vn_w = c(vn_w[1],diff(vn_w)) # put 1st value because differencing (why?) loses the first observation; vector of probabilities?
 chi_test_w = sum((vn_w-length(std_daily)/b)**2/(length(std_weekly)/b))
 cat("test =",chi_test_w," df =",b-3," p-value =",1-pchisq(chi_test_w,df=b-3))
+
+test_tab[2, 1] <- chi_test_w
 ```
 
 Refer to Rosenblatt and show one histogram
@@ -84,20 +126,23 @@ df = 4
 
 #daily
 r_t = pt(std_daily_t,df=df)
-hist(r_t, breaks=50)
+#hist(r_t, breaks=50)
 vt = NULL; for(val in bin) vt = c(vt,sum(vt <= val))
 vt = c(vt[1],diff(vt))
 test = sum((vt-length(std_daily_t)/b)**2/(length(std_daily_t)/b)) # he used the std. normal data, not for t-dist.
 cat("test =",test," df =",b-3," p-value =",1-pchisq(test,df=b-3)) # p-value = 0, reject t distr.
 #diff. output than his (df, test etc)
+test_tab[1, 2] <- test
 
 #weekly
 r_t_w = pt(std_weekly_t,df=df)
-hist(r_t_w, breaks=50)
+#hist(r_t_w, breaks=50)
 vt_w = NULL; for(val in bin) vt_w = c(vt_w,sum(vt_w <= val))
 vt_w = c(vt[1],diff(vt_w))
-test = sum((vt_w-length(std_daily_t)/b)**2/(length(std_daily_t)/b))
+test = sum((vt_w-length(std_weekly_t)/b)**2/(length(std_weekly_t)/b))
 cat("test =",test," df =",b-3," p-value =",1-pchisq(test,df=b-3))
+
+test_tab[2, 2] <- test
 ```
 
 ```{r test mix, echo=F}
@@ -108,7 +153,7 @@ sigma = 2.7 # this is the var of the second normal distr. and the first one is s
 #daily
 mix_daily = std_daily*sqrt((1-alpha) + alpha*sigma**2) #as data is std. and needs to be multiplied with var of mixed distr.
 r_mix = (1-alpha)*pnorm(mix_daily) + alpha*pnorm(mix_daily,sd=sigma) #corresp. CDF of the mixture normal distr.
-hist(r_mix)
+#hist(r_mix)
 vn_mix = NULL; for(val in bin) vn_mix = c(vn_mix,sum(r_mix <= val))
 vn_mix = c(vn_mix[1],diff(vn_mix))
 test = sum((vn_mix-length(std_daily)/b)**2/(length(std_daily)/b))
@@ -125,17 +170,13 @@ func <- function(vx){
   vn_mix_opt = c(vn_mix_opt[1],diff(vn_mix_opt))
   return(sum((vn_mix_opt-length(std_daily)/b)**2/(length(std_daily)/b)))
 }
-#vx just a pair of parameters
 
-##### what's happening here??
 func(c(0.15,4))
 
-res = optim(par=c(0.1,4),fn=func,method="BFGS") # this is not cherry-picking, this is optimizing (similar to OLS)
+res <- optim(par=c(0.1,4),fn=func,method="BFGS") # this is not cherry-picking, this is optimizing (similar to OLS)
 
 res
 1-pchisq(res$value,df=b-3)
-#alpha = 0.196 irgendwas, sigma = 2.66 irgendwas --> p-value becomes bigger than 1%, best we can get
-####
 
 #optimization weekly
 func <- function(vx){
@@ -149,9 +190,16 @@ func <- function(vx){
   return(sum((vn_mix_opt_w-length(std_weekly)/b)**2/(length(std_weekly)/b)))
 }
 
-#### adjust
 func(c(0.15,4))
 
-optim(par=c(0.1,4),fn=func,method="BFGS")
-####
+res <- optim(par=c(0.1,4),fn=func,method="BFGS")
+
+#hist of optimal daily
+alpha_opt_d=0.1212156
+sigma_opt_d=4.1111241
+mix_daily_opt_er = std_daily*sqrt((1-alpha_opt_d) + alpha_opt_d*sigma_opt_d**2)
+r_mix_opt_er = (1-alpha_opt_d)*pnorm(mix_daily_opt_er) + alpha*pnorm(mix_daily_opt_er,sd=sigma_opt_d)
+hist(r_mix_opt_er, breaks = 50, main = "Histogram of the optimal mixed normal distribution (2 components)")
 ```
+
+Even when mixed, histogram npot unoformly distr. and p value too small.

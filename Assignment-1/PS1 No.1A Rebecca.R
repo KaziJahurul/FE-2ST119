@@ -13,10 +13,12 @@ weekly <- DJ_w$r_close
 plot1A1.1 <- ggplot(data=DJ_d) + geom_line(aes(x=1:nrow(DJ_d), y=r_Dow_Jones)) +
   labs(x='Time horizon', y='Log return', title='Dow Jones daily log returns')
 plot1A1.1 + theme_classic()
+# higher variances between ca. 1928-1940
 
 plot1A1.2 <- ggplot(data=DJ_w) + geom_line(aes(x=1:nrow(DJ_w), y=r_close)) +
   labs(x='Time horizon', y='Log return', title='Dow Jones weekly log returns')
 plot1A1.2 + theme_classic()
+# higher variances between ca. 1928-1940
 
 # library(xtable)
 # distr_daily <- describe(DJ_d$r_Dow_Jones)
@@ -35,8 +37,11 @@ distr_daily <- data.frame(describe(DJ_d$r_Dow_Jones), row.names = "Daily")
 distr_weekly <- data.frame(describe(DJ_w$r_close), row.names = "Weekly")
 
 dat.df <- t(rbind.data.frame(distr_daily, distr_weekly))
-kable(dat.df)
+# kable(dat.df)
+# mad = median absolute deviation from the median)
 
+rownames(dat.df)
+kable(dat.df[c("n", "mean", "sd", "median", "min", "max", "skew", "kurtosis"), ])
 
 ## No. 2
 # a)
@@ -49,7 +54,7 @@ qqnorm(std_weekly)
 qqline(std_weekly, col = "red")
 
 # b)
-df = 4 # the lower the df the bigger the kurtosis
+# the lower the df the bigger the kurtosis
 std_daily_t = std_daily*sqrt(df/(df-2))
 qqplot(rt(length(std_daily_t), df = df), std_daily_t)
 qqline(std_daily_t, col = "red")
@@ -169,3 +174,10 @@ func(c(0.15,4))
 
 optim(par=c(0.1,4),fn=func,method="BFGS")
 ####
+
+#hist of optimal daily
+alpha_opt_d=0.1212156
+sigma_opt_d=4.1111241
+mix_daily_opt_er = std_daily*sqrt((1-alpha_opt_d) + alpha_opt_d*sigma_opt_d**2)
+r_mix_opt_er = (1-alpha_opt_d)*pnorm(mix_daily_opt_er) + alpha*pnorm(mix_daily_opt_er,sd=sigma_opt_d)
+hist(r_mix_opt_er, breaks = 50)
