@@ -16,6 +16,7 @@ library(tidyverse)
 library(FE)
 library(psych)
 library(knitr)
+library(xtable)
 
 daily <- DJ_d$r_Dow_Jones
 weekly <- DJ_w$r_close
@@ -33,9 +34,7 @@ plot1A1.1 <- ggplot(data=DJ_d) + geom_line(aes(x=1:nrow(DJ_d), y=r_Dow_Jones)) +
 plot1A1.1 + theme_classic()
 ```
 
-The distributional parameters of the time series show that 
-Remarkable: high kurtosis, weekly is much more skewed
-Add histograms?
+Table ??? summarizes the distributional parameters of both the daily and weekly compounded returns of the Dow Jones between 1900-1990. The Dow Jones log returns seem to have a mean close to zero but slightly positive for both weekly and daily data. The distribution of returns is moderately (daily data) to highly (weekly data) negatively skewed. It also shows a remarkably high degree of kurtosis, around 36.6 for daily data and 15.06 for weekly data. 
 
 #### Table of distributional parameters
 ```{r distrib prop, echo=F}
@@ -45,6 +44,8 @@ distr_weekly <- data.frame(describe(DJ_w$r_close), row.names = "Weekly")
 dat.df <- t(rbind.data.frame(distr_daily, distr_weekly))
 kable(dat.df[c("n", "mean", "sd", "median", "min", "max", "skew", "kurtosis"), ])
 ```
+Overall, the daily and weekly data appear to be comparable in range and mean but depict highly different degrees of skewness and kurtosis, indicating that the daily log returns are portrayed by a less negatively skewed distribution with a much higher kurtosis.
+
 
 > 2)
 
@@ -80,16 +81,19 @@ qqplot(rt(length(std_weekly_t), df = df), std_weekly_t,  main = "T-distribution 
 qqline(std_weekly_t, col = "red")
 ```
 
-None of the distributions fit well, the one that fits the best is the t distr. Even here, tails don't fit, point towards a distrib. with higher kurtosis. (put all QQ plots next to each other)
+When plotted against the theoretical quantiles of the normal distribution, Figure ??? provides graphical evidence against the normal distribution being the true underlying distribution of daily and weekly log returns. The slightly S-shaped tails of the quantiles point towards a distribution with a higher kurtosis which is in line with the distributional parameters discussed above. The T-distribution seems to offer a slightly better fit, especially in the case of daily returns. But considering the scattering of the quantiles around the qqline(???) at the edges, the true distribution indicates a lower kurtosis than the T-distribution. Neither the normal distribution nor the T-distribution seem to provide good enough fits for daily and weekly log returns of the Dow Jones.
 
 > 3)
 
 ```{r test normal, echo=F}
 
-test_tab <- matrix(nrow=2, ncol=2)
+test_tab <- matrix(nrow=2, ncol=3)
 rownames(test_tab) <- c('Daily', 'Weekly')
-colnames(test_tab) <- c('Normal', 'Student t (df=4')
+colnames(test_tab) <- c('Normal', 'Student t (df=4)', 'Mixed normal')
 
+test_tab.p <- matrix(nrow=2, ncol=3)
+rownames(test_tab.p) <- c('Daily', 'Weekly')
+colnames(test_tab.p) <- c('Normal', 'Student t (df=4)', 'Mixed normal')
 
 b = 30
 bin = 1:b/b
@@ -105,6 +109,7 @@ chi_test = sum((vn-length(std_daily)/b)**2/(length(std_daily)/b))
 cat("test =",chi_test," df =",b-3," p-value =",1-pchisq(chi_test,df=b-3))
 
 test_tab[1, 1] <- chi_test
+test_tab.p[1, 1] <- 1-pchisq(chi_test,df=b-3)
 
 #weekly
 r_nor_w = pnorm(std_weekly)
@@ -117,9 +122,8 @@ chi_test_w = sum((vn_w-length(std_daily)/b)**2/(length(std_weekly)/b))
 cat("test =",chi_test_w," df =",b-3," p-value =",1-pchisq(chi_test_w,df=b-3))
 
 test_tab[2, 1] <- chi_test_w
+test_tab.p[2, 1] <- 1-pchisq(chi_test_w,df=b-3)
 ```
-
-Refer to Rosenblatt and show one histogram
 
 ```{r test t, echo=F}
 df = 4
@@ -133,6 +137,7 @@ test = sum((vt-length(std_daily_t)/b)**2/(length(std_daily_t)/b)) # he used the 
 cat("test =",test," df =",b-3," p-value =",1-pchisq(test,df=b-3)) # p-value = 0, reject t distr.
 #diff. output than his (df, test etc)
 test_tab[1, 2] <- test
+test_tab.p[1, 2] <- 1-pchisq(test,df=b-3)
 
 #weekly
 r_t_w = pt(std_weekly_t,df=df)
@@ -143,9 +148,12 @@ test = sum((vt_w-length(std_weekly_t)/b)**2/(length(std_weekly_t)/b))
 cat("test =",test," df =",b-3," p-value =",1-pchisq(test,df=b-3))
 
 test_tab[2, 2] <- test
+test_tab.p[2, 2] <- 1-pchisq(test,df=b-3)
+
 ```
 
 ```{r test mix, echo=F}
+
 #arbitrary choice
 alpha = 0.4
 sigma = 2.7 # this is the var of the second normal distr. and the first one is std_daily?
@@ -159,6 +167,26 @@ vn_mix = c(vn_mix[1],diff(vn_mix))
 test = sum((vn_mix-length(std_daily)/b)**2/(length(std_daily)/b))
 cat("test =",test," df =",b-3," p-value =",1-pchisq(test,df=b-3))
 
+test_tab[1, 3] <- test
+test_tab.p[1, 3] <- 1-pchisq(test,df=b-3)
+
+#weekly
+mix_weekly = std_weekly*sqrt((1-alpha) + alpha*sigma**2) #as data is std. and needs to be multiplied with var of mixed distr.
+r_mix_w = (1-alpha)*pnorm(mix_weekly) + alpha*pnorm(mix_weekly,sd=sigma) #corresp. CDF of the mixture normal distr.
+#hist(r_mix)
+vn_mix_w = NULL; for(val in bin) vn_mix_w = c(vn_mix_w,sum(r_mix_w <= val))
+vn_mix_w = c(vn_mix_w[1],diff(vn_mix_w))
+test = sum((vn_mix_w-length(std_weekly)/b)**2/(length(std_weekly)/b))
+cat("test =",test," df =",b-3," p-value =",1-pchisq(test,df=b-3))
+
+test_tab[2, 3] <- test
+test_tab.p[2, 3] <- 1-pchisq(test,df=b-3)
+
+print(xtable(test_tab, caption = 'Test statistic'), caption.placement = 'top')
+print(xtable(test_tab.p, caption = 'P-values'), caption.placement = 'top')
+```
+This result is further supported by a $\chi^2$-goodness-of-fit test against both distributions. As the p-values reported in Table ??? show, the hypothesis of either the t-distribution or the normal distribution as the true underlying distribution of daily and/or weekly log returns is rejected at the highest significance level. Also when assuming a two-component mixed normal distribution consisting of the standardized normal distribution and one with $\alpha = 0.4$ $\sigma = 2.7$, this result doesn't change, even though the test statistic becomes much smaller (see Table ???). 
+```{r optimize mix, echo=F}
 #optimization daily
 func <- function(vx){
   alpha = vx[1]
@@ -173,7 +201,7 @@ func <- function(vx){
 
 func(c(0.15,4))
 
-res <- optim(par=c(0.1,4),fn=func,method="BFGS") # this is not cherry-picking, this is optimizing (similar to OLS)
+res <- suppressWarnings(optim(par=c(0.1,4),fn=func,method="BFGS")) # this is not cherry-picking, this is optimizing (similar to OLS)
 
 res
 1-pchisq(res$value,df=b-3)
@@ -192,14 +220,14 @@ func <- function(vx){
 
 func(c(0.15,4))
 
-res <- optim(par=c(0.1,4),fn=func,method="BFGS")
+res <- suppressWarnings(optim(par=c(0.1,4),fn=func,method="BFGS"))
 
 #hist of optimal daily
 alpha_opt_d=0.1212156
 sigma_opt_d=4.1111241
 mix_daily_opt_er = std_daily*sqrt((1-alpha_opt_d) + alpha_opt_d*sigma_opt_d**2)
 r_mix_opt_er = (1-alpha_opt_d)*pnorm(mix_daily_opt_er) + alpha*pnorm(mix_daily_opt_er,sd=sigma_opt_d)
-hist(r_mix_opt_er, breaks = 50, main = "Histogram of the optimal mixed normal distribution (2 components)")
+hist(r_mix_opt_er, breaks = 50, main = "Histogram of the optimal mixed normal distribution (2 components)",xlab = "q_it")
 ```
+Nonetheless, as the parameters of the tested distribution are chosen arbitrarily, one should consider the best possible mixed distribution. Optimizing the mixed distribution with regard to the distribution parameters of the second component still yields the rejection of this being the true underlying distribution. Rosenblatt (1952) derived that the distribution of $q_{it} = \int_{- \infty }^{r_{it}} f(s) \,ds  = F(r_{it};\theta)$ under the null hypothesis is uniform. As Figure ??? shows and as the p-value of 0 confirms, the distribution of $q_it$ is clearly not uniform and even the optimized two-component mixed normal distribution is rejected as the true underlying distribution. The results for weekly returns are similar. While out of scope, one of several possible improvements of distribution fit could be the addition of components to the mixed distribution.
 
-Even when mixed, histogram npot unoformly distr. and p value too small.
