@@ -11,11 +11,15 @@ library(xtable)
 # log(P_t) - log(P_{t-1}) = log(P_t / P_{t-1}) = log(R_t)
 lret = apply(log(index_d), 2, diff)
 
-
 # summarize data
-summary(lret)
+descr <- describe(lret)
+descr <- descr[, c("n", "mean", "sd", "median", "min", "max", "skew", "kurtosis")]
+
+xtable(descr)
 
 # calculate ACF and PACF
+# interpretation of ACF/PACF
+# https://medium.com/@ooemma83/how-to-interpret-acf-and-pacf-plots-for-identifying-ar-ma-arma-or-arima-models-498717e815b6
 
 acf_tabs <- function(data, lag.max=10, plot=T){
 
@@ -35,6 +39,12 @@ acf_tabs <- function(data, lag.max=10, plot=T){
     # data for each column removing na
     x <- data[!is.na(data[,c]), c]
 
+
+    if (plot){
+      # two columns for ACF and PACF
+      par(mfcol=c(1, 2))
+    }
+
     # plot ACf and PACF
     acf_val <- acf(x, main=c, plot=plot)
     pacf_val <- pacf(x, main=c, plot=plot)
@@ -49,7 +59,11 @@ acf_tabs <- function(data, lag.max=10, plot=T){
 
 }
 
-acf_tabs(lret)
+tabs = acf_tabs(lret)
+
+xtable(t(tabs$acf))
+
+xtable(t(tabs$pacf))
 
 # 2. ####
 

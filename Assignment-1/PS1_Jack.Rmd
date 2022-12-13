@@ -6,6 +6,7 @@ date: ""
 output:
   html_document:
     df_print: paged
+    keep_tex: yes
   df_print: kable
   pdf_document:
     keep_tex: yes
@@ -18,8 +19,6 @@ library(tidyverse)
 library(FE)
 library(psych)
 library(knitr)
-
-
 
 library(xtable)
 ```
@@ -36,7 +35,7 @@ lret = apply(log(index_d), 2, diff)
 descr <- describe(lret)
 descr <- descr[, c("n", "mean", "sd", "median", "min", "max", "skew", "kurtosis")]
 
-xtable(descr)
+kable(descr)
 ```
 
 ## Autocorrelation of international stock indexes
@@ -101,9 +100,11 @@ acf_tabs <- function(data, lag.max=20, plot=T){
 
 tabs = acf_tabs(lret)
 
-xtable(t(tabs$acf))
+# xtable(t(tabs$acf))
+# xtable(t(tabs$pacf))
 
-xtable(t(tabs$pacf))
+kable(t(tabs$acf))
+kable(t(tabs$pacf))
 ```
 
 ## Ljung-Box Test
@@ -186,6 +187,7 @@ for (c in colnames(lret)){
   }
 }
 
+
 comment <- paste('This table presents p-values of',
                  'Ljung-Box tests of no autocorrelation.',
                  'Significance levels:',
@@ -193,7 +195,23 @@ comment <- paste('This table presents p-values of',
                  '\\** p-value < 0.5,',
                  '\\*** p-value <0.01.')
 
-xtable(LB_pvals, caption=comment)
+kable(LB_pvals, caption=comment)
+
+# LB_tests <- list(LB_tests)
+# attr(LB_tests, "message") <- c(
+#                   'This table presents p-values of Ljung-Box tests of no autocorrelation.',
+#                  'Significance levels:',
+#                  '* p-value < 0.1,',
+#                  '** p-value < 0.5,',
+#                  '*** p-value <0.01.'
+#                  )
+# 
+# print(
+#  xtable(LB_pvals, caption="Table of chi-square p-values")
+#       , caption.placement = "top"
+#       , sanitize.text.function = identity
+#       )
+
 ```
 
 From the p-value of the test results, for all lag orders $k \in \{10, 50, 100\}$ we can reject the null of no autocorrelation for the **FTSE100, HNGKNGI, NIKKEI, SNGALLS,** and **SPCOMP** at less than the 1% quantile level of the Chi-squared distribution. Therefore, there is some strong evidence of autocorrelation in these indices.
@@ -238,8 +256,8 @@ corr_mat <- function(data, lag=1) {
 
 }
 
-xtable(corr_mat(lret, lag=0))
-xtable(corr_mat(lret, lag=1))
+kable(corr_mat(lret, lag=0))
+kable(corr_mat(lret, lag=1))
 ```
 
 ## Squared log returns
@@ -248,4 +266,10 @@ This subsection answers Part 1BQ4
 
 ```{r sq_lret, results='asis'}
 sq_lret = lret^2
+```
+
+
+## Question 4
+```{r , results='asis'}
+
 ```
