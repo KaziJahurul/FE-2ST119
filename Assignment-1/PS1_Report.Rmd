@@ -6,7 +6,7 @@ author:
 - Kazi Jahurul Islam
 date: ""
 header-includes:
-   - \usepackage{bbm}
+   - \usepackage{bbm, amsmath}
 output:
   pdf_document:
     keep_tex: yes
@@ -22,6 +22,8 @@ library(tidyverse)
 library("FE")
 library(psych)
 library(kableExtra)
+library(tseries)
+library(xtable)
 ```
 
 
@@ -32,6 +34,7 @@ library(kableExtra)
 
 In this part of the report we are going to discuss the test for asset return predictability based on autocorrelation functions, Ljung-Box statistics and variance ratio tests using the \textbf{Dow Jones Daily} and \textbf{Dow Jones Weekly} data set.
 
+### Daily and weekly data:
 
 ```{r, echo=FALSE}
 ############## Task 1. #################
@@ -47,9 +50,348 @@ acf(logreturn_DJ_w, main = "ACF of Weekly Dow Jones returns")
 pacf(logreturn_DJ_w, main="PACF of weekly Dow Jones returns")
 ```
 
-In the above figures we observe significant lags from the \textbf{ACF} and \textbf{PACF} plot for both \textbf{Dow Jones Daily} and \textbf{Dow Jones Weekly} data. Which is the indication of autocorrealatios. 
+In the above figures we observe significant lags from the \textbf{ACF} and \textbf{PACF} plot for both \textbf{Dow Jones Daily} and \textbf{Dow Jones Weekly} data. Which is the indication of autocorrealatios.
 
-Now at this point we are going to apply Lung-Box and variance ratio test to check autocorrelation for both data set. The results are presented below:
+
+```{r, echo=FALSE, eval=FALSE}
+acf_d = acf(logreturn_DJ_d, lag = 5, pl = FALSE)[1:5]
+acf_w = acf(logreturn_DJ_w, lag = 5, pl = FALSE)[1:5]
+acf_tab = data.frame(Daily = acf_d$acf, Weekly = acf_w$acf)
+rownames(acf_tab) = c("AC(1)", "AC(2)", "AC(3)", "AC(4)", "AC(5)")
+comment <- paste('This table presents autocorrelation of first five lag')
+kable(t(acf_tab), caption=comment)
+```
+
+\newpage
+
+Now at this point we are going to apply Lung-Box test to check autocorrelation for both data set. The results are presented below:
+
+
+```{r, echo=FALSE}
+LB = function(data, lag, p){
+
+  # time periods
+  T = length(data)
+
+  # get ACF coeffs
+  rho = acf(data, lag.max=lag, plot=F)$acf
+
+  # remove 0th lag coeffs then square
+  rho_sq = rho[2:(lag+1)]**2
+
+  # test statistic
+  Q = T * (T+2) * sum(rho_sq / (T-1:lag))
+
+  # return test and p-value
+  return(list(test=Q, pval=1-pchisq(Q, df=lag-p)))
+}
+## q-period aggregated return.
+VDR = function(vr, iq){
+  iTT = length(vr)
+  im = floor(iTT/iq)
+  iT = im*iq
+
+  rr = vr[1:iT]
+  mu = mean(rr)
+  sa2 = var(rr)
+
+  #
+  arr = NULL
+  for(iter in 1:(iT-iq+1))
+    arr = c(arr,sum(rr[iter:(iter+iq-1)]))
+
+  sc2 = sum((arr-mu*iq)**2)/iq/(iT-iq+1)/(1-(1/im))
+
+  VD = sc2 - sa2
+  VR = sc2/sa2
+  tmp = sqrt(2*(2*iq-1)*(iq-1)/3/iq)
+
+  VD = VD*sqrt(iT)/sa2/tmp
+  VR = (VR-1)*sqrt(iT)/tmp
+
+  # returns test stats ~ N(0, 1)
+  return(list(VD=VD, VR=VR))
+}
+lags <- c(5, 10, 20)
+
+make_tab = function(data, lags) {
+  LB_tab = matrix(nrow = length(lags),
+                  ncol = 2,
+                  dimnames = list(lags, c('Test', 'P-value')))
+  for (i in 1:length(lags)) {
+    temp = LB(data, lag=lags[i], p=0)
+
+    # significance level stars
+    pval = signif(temp$pval, 3)
+    for (qt in c(0.1, 0.05, 0.01)){
+      if (temp$pval < qt){
+        pval = paste(pval,'*', sep='')
+      }
+    }
+
+    LB_tab[i, 1] = sprintf(temp$test, fmt = '%#.2f')
+    LB_tab[i, 2] = pval
+  }
+
+  return(LB_tab)
+}
+
+daily_data = make_tab(logreturn_DJ_d, lags)
+rownames(daily_data) = paste(rownames(daily_data), '(DJ_d)', sep='')
+weekly_data = make_tab(logreturn_DJ_w, lags)
+rownames(weekly_data) = paste(rownames(weekly_data), '(DJ_w)', sep='')
+
+vr_tab = matrix(nrow = 2, ncol = 2,
+                dimnames = list(c('VR(DJ_d)', 'VR(DJ_w)'),
+                                c('Test', 'P-value')))
+
+
+vr_test = VDR(vr = logreturn_DJ_d, iq = 5)
+
+vr_tab[1, 1] = sprintf(vr_test$VR, fmt = '%#.2f')
+pval = sprintf(2*pnorm(-abs(vr_test$VR)), fmt = '%#.2f')
+for (qt in c(0.1, 0.05, 0.01)){
+  if (pval < qt){
+    pval = paste(pval,'*', sep='')
+  }
+}
+vr_tab[1, 2] = pval
+vr_test = VDR(vr = logreturn_DJ_w, iq = 5)
+vr_tab[2, 1] = sprintf(vr_test$VR, fmt = '%#.2f')
+pval = sprintf(2*pnorm(-abs(vr_test$VR)), fmt = '%#.2f')
+for (qt in c(0.1, 0.05, 0.01)){
+  if (pval < qt){
+    pval = paste(pval,'*', sep='')
+  }
+}
+vr_tab[2, 2] = pval
+
+test_table = cbind(t(daily_data), t(weekly_data), t(vr_tab))
+comment = paste('This table presents p-values of',
+                 'Ljung-Box and variance ratio tests',
+                 'of no autocorrelation for daily and weekly data.',
+                 'Stars indicate significance levels.',
+                 '*: p-value < 0.1,',
+                 '**: p-value < 0.5,',
+                 '***: p-value <0.01.')
+kable(t(test_table), caption=comment)
+```
+
+
+We present the p-values of the Ljung-Box test for each index with $k \in \{5, 10, 20\}$ lags below, with degrees of freedom $d = k - 2$.
+
+It is interesting to note that Ljunk-box with five and ten and twenty lags and variance ratio statistics are highly significant for daily log returns. On the other hand to daily returns, the respective autocorrelation tests are insignificant for weekly log returns. So we can be concluded that the daily returns are autocorrelated and weekly returns may not be auto correlated.
+
+### Aggregated data:
+
+```{r, echo=FALSE}
+### higher aggregate data generation with out overlap
+data_aggr = function(data, aggr) {
+  iTT = length(data)
+  im = floor(iTT/aggr)
+  iT = im*aggr
+  rr = data[1:iT]
+
+  arr = NULL
+  for(iter in seq(1, iT, aggr))
+    arr = c(arr, sum(rr[iter:(iter+aggr-1)]))
+
+  return(arr)
+}
+
+DJ_d_two = data_aggr(DJ_d$r_Dow_Jones, 2)
+DJ_w_two = data_aggr(DJ_w$r_close, 2)
+
+# calculate ACF and PACF
+par(mfrow=c(2,2))
+# ACF and PACF values of daily data
+acf(DJ_d_two, main = "ACF of two-day Dow Jones returns")
+pacf(DJ_d_two, main="PACF of two-day Dow Jones returns")
+
+
+# ACF and PACF values of weekly data
+acf(DJ_w_two, main = "ACF of two-week Dow Jones returns")
+pacf(DJ_w_two, main="PACF of two-week Dow Jones returns")
+```
+
+
+From the above plots we observe for 2 day Dow Jones return, both acf and pacf exibits some tailing off so they can be modeled with ARMA model, there its a indication of autocorrelations. But for 2 week Dow Jones return there are no significant tail off which indicates theres maybe no auto correlation present in 2 weekly Dow Jones asset returns.
+
+
+Now we are going to apply Lung-Box test to check autocorrelation for 2 day and 2 week data set. The results are presented below:
+```{r, echo=FALSE}
+two_day_data = make_tab(DJ_d_two, lags)
+rownames(two_day_data) = paste(rownames(two_day_data), '(DJ_d)', sep='')
+two_week_data = make_tab(DJ_w_two, lags)
+rownames(two_week_data) = paste(rownames(two_week_data), '(DJ_w)', sep='')
+
+vr_tab = matrix(nrow = 2, ncol = 2,
+                dimnames = list(c('VR(DJ_d)', 'VR(DJ_w)'),
+                                c('Test', 'P-value')))
+vr_test = VDR(vr = DJ_d_two, iq = 5)
+vr_tab[1, 1] = sprintf(vr_test$VR, fmt = '%#.2f')
+pval = sprintf(2*pnorm(-abs(vr_test$VR)), fmt = '%#.2f')
+for (qt in c(0.1, 0.05, 0.01)){
+  if (pval < qt){
+    pval = paste(pval,'*', sep='')
+  }
+}
+vr_tab[1, 2] = pval
+vr_test = VDR(vr = DJ_w_two, iq = 5)
+vr_tab[2, 1] = sprintf(vr_test$VR, fmt = '%#.2f')
+pval = sprintf(2*pnorm(-abs(vr_test$VR)), fmt = '%#.2f')
+for (qt in c(0.1, 0.05, 0.01)){
+  if (pval < qt){
+    pval = paste(pval,'*', sep='')
+  }
+}
+vr_tab[2, 2] = pval
+
+test_table = cbind(t(two_day_data), t(two_week_data), t(vr_tab))
+comment = paste('This table presents p-values of',
+                 'Ljung-Box and variance ratio tests',
+                 'of no autocorrelation for 2-day and 2-week',
+                 'Stars indicate significance levels.',
+                 '*: p-value < 0.1,',
+                 '**: p-value < 0.5,',
+                 '***: p-value <0.01.')
+kable(t(test_table), caption=comment)
+```
+
+We observe here that, Ljunk-box with five and ten and twenty lags statistics are highly significant for 2-day log returns. On the other hand to daily returns, the respective autocorrelation tests are insignificant for 2-week log returns. Here we do notice that variance ratio statistics are no significant for both 2-day and 2-week agrregated data. So we can be concluded that the daily returns are autocorrelated and weekly returns may not be autocorrelated.
+
+\textbf{Note: need to interpret variance ratio statistics.}
+
+
+Now we are going to look at 5 day and 10 day agrregated data in the form of ACF and PACF plot.
+
+```{r, echo=FALSE}
+######## Higher aggregated log returns ##########
+##### Generating Higher aggregated log returns data
+DJ_d5 = data_aggr(DJ_d$r_Dow_Jones, 5)
+DJ_d10 = data_aggr(DJ_d$r_Dow_Jones, 10)
+DJ_w4 = data_aggr(DJ_w$r_close, 4)
+DJ_w12 = data_aggr(DJ_w$r_close, 12)
+
+
+# calculate ACF and PACF
+par(mfrow=c(2,2))
+# ACF and PACF values of 5-day and 10-day data
+acf(DJ_d5, main = "ACF of 5-day Dow Jones returns")
+acf(DJ_d10, main = "ACF of 10-day Dow Jones returns")
+pacf(DJ_d5, main="PACF of 5-day Dow Jones returns")
+pacf(DJ_d10, main="PACF of 10-day Dow Jones returns")
+```
+
+
+From the above plots we observe for 5-day and 10-day Dow Jones return, acf does not exibit any tailing off and pacf exibits some tailing off so they can be modeled with MA model, there its a indication of autocorrelations. 
+
+Now we are going to apply Lung-Box test to check autocorrelation for 5-day and 10-day data set. The results are presented below:
+```{r, echo=FALSE}
+day_5_data = make_tab(DJ_d5, lags)
+rownames(day_5_data) = paste(rownames(day_5_data), '(DJ_d)', sep='')
+day_10_data = make_tab(DJ_d10, lags)
+rownames(day_10_data) = paste(rownames(day_10_data), '(DJ_d)', sep='')
+
+vr_tab = matrix(nrow = 2, ncol = 2,
+                dimnames = list(c('VR(DJ_d)', 'VR(DJ_w)'),
+                                c('Test', 'P-value')))
+vr_test = VDR(vr = DJ_d5, iq = 5)
+vr_tab[1, 1] = sprintf(vr_test$VR, fmt = '%#.2f')
+pval = sprintf(2*pnorm(-abs(vr_test$VR)), fmt = '%#.2f')
+for (qt in c(0.1, 0.05, 0.01)){
+  if (pval < qt){
+    pval = paste(pval,'*', sep='')
+  }
+}
+vr_tab[1, 2] = pval
+vr_test = VDR(vr = DJ_d10, iq = 5)
+vr_tab[2, 1] = sprintf(vr_test$VR, fmt = '%#.2f')
+pval = sprintf(2*pnorm(-abs(vr_test$VR)), fmt = '%#.2f')
+for (qt in c(0.1, 0.05, 0.01)){
+  if (pval < qt){
+    pval = paste(pval,'*', sep='')
+  }
+}
+vr_tab[2, 2] = pval
+
+test_table = cbind(t(day_5_data), t(day_10_data), t(vr_tab))
+comment = paste('This table presents p-values of',
+                 'Ljung-Box and variance ratio tests',
+                 'of no autocorrelation for 5-day and 10-day',
+                 'Stars indicate significance levels.',
+                 '*: p-value < 0.1,',
+                 '**: p-value < 0.5,',
+                 '***: p-value <0.01.')
+kable(t(test_table), caption=comment)
+```
+
+We observe here that, Ljunk-box with five, ten lags and variance ratio statistics are non significant for 5-day and 10-day log returns. On the other hand for lag 20 the respective autocorrelation tests are significant for 2-week log returns. So we can be concluded that the both 5-day and 10-day returns maybe autocorrelated for high lag values.
+
+Now we are going to take a look at 4-week and 12 week agrregated data in the form of ACF and PACF plot.
+
+```{r, echo=FALSE}
+# calculate ACF and PACF
+par(mfrow=c(2,2))
+# ACF and PACF values of 4 week and 12 week data
+acf(DJ_w4, main = "ACF of 4-week Dow Jones returns")
+acf(DJ_w12, main = "ACF of 12-week Dow Jones returns")
+pacf(DJ_w4, main="PACF of 4-week Dow Jones returns")
+pacf(DJ_w12, main="PACF of 12-week Dow Jones returns")
+```
+
+From the above plots we observe for 4-week and 12-week Dow Jones return, acf does not exibit any tailing off and pacf exibits some tailing off so they can be modeled with MA model, there its a indication of autocorrelations. 
+
+Now we are going to apply Lung-Box test to check autocorrelation for 4-week and 12-week data set. The results are presented below:
+```{r, echo=FALSE}
+week_4_data = make_tab(DJ_w4, lags)
+rownames(week_4_data) = paste(rownames(week_4_data), '(DJ_d)', sep='')
+week_12_data = make_tab(DJ_w12, lags)
+rownames(week_12_data) = paste(rownames(week_12_data), '(DJ_w)', sep='')
+
+vr_tab = matrix(nrow = 2, ncol = 2,
+                dimnames = list(c('VR(DJ_d)', 'VR(DJ_w)'),
+                                c('Test', 'P-value')))
+vr_test = VDR(vr = DJ_w4, iq = 3)
+vr_tab[1, 1] = sprintf(vr_test$VR, fmt = '%#.2f')
+pval = sprintf(2*pnorm(-abs(vr_test$VR)), fmt = '%#.2f')
+for (qt in c(0.1, 0.05, 0.01)){
+  if (pval < qt){
+    pval = paste(pval,'*', sep='')
+  }
+}
+vr_tab[1, 2] = pval
+vr_test = VDR(vr = DJ_w12, iq = 5)
+vr_tab[2, 1] = sprintf(vr_test$VR, fmt = '%#.2f')
+pval = sprintf(2*pnorm(-abs(vr_test$VR)), fmt = '%#.2f')
+for (qt in c(0.1, 0.05, 0.01)){
+  if (pval < qt){
+    pval = paste(pval,'*', sep='')
+  }
+}
+vr_tab[2, 2] = pval
+test_table = cbind(t(week_4_data), t(week_12_data), t(vr_tab))
+comment = paste('This table presents p-values of Ljung-Box tests',
+                 'of no autocorrelation for 4-week and 12-week',
+                 'Stars indicate significance levels.',
+                 '*: p-value < 0.1,',
+                 '**: p-value < 0.5,',
+                 '***: p-value <0.01.')
+kable(t(test_table), caption=comment)
+```
+
+We observe here that, Ljunk-box with ten lags and variance ratio statistics are significant for 4-week data. On the other hand for 12-week log retiurns lag ten and twenty the Ljunk-box and variance ratio autocorrelation tests are significant. So we can be concluded that the both 4-week and 12-week returns maybe autocorrelated for high lag values.
+
+
+### Appropriate sub-periods:
+
+
+
+
+
+
+
+
 
 
 

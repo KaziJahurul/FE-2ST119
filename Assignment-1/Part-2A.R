@@ -7,6 +7,7 @@ library(tidyverse)
 library(psych)
 library(tseries)
 library(kableExtra)
+library(xtable)
 
 
 
@@ -26,7 +27,7 @@ describe(DJ_w$r_close)
 # calculate ACF and PACF
 
 # ACF and PACF plots of daily data
-acf(logreturn_DJ_d, main = "ACF of daily Dow Jones returns")
+acf(logreturn_DJ_d, main = "ACF of daily Dow Jones returns")$acf
 pacf(logreturn_DJ_d, main="PACF of daily Dow Jones returns")
 
 
@@ -34,9 +35,6 @@ pacf(logreturn_DJ_d, main="PACF of daily Dow Jones returns")
 acf(logreturn_DJ_w, main = "ACF of Weekly Dow Jones returns")
 pacf(logreturn_DJ_w, main="PACF of weekly Dow Jones returns")
 
-# Calculating autocorrelation
-acf(logreturn_DJ_d, lag = 5, pl = FALSE)
-acf(logreturn_DJ_w, lag = 5, pl = FALSE)
 
 ### Ljung-Box test function copy of Jacks LB function
 LB = function(data, lag, p){
@@ -70,6 +68,7 @@ LB(vx=logreturn_DJ_w, lag=100, p=0)
 ## Variance ratio test function
 
 # key slide lec 3 pg 21
+## q-period aggregated return.
 VDR = function(vr, iq){
   iTT = length(vr)
   im = floor(iTT/iq)
@@ -102,6 +101,78 @@ VDR(vr = logreturn_DJ_d, iq = 5)
 
 # Variance ratio test for weekly data
 VDR(vr = logreturn_DJ_w, iq = 5)
+
+# Making tables
+acf_tab = data.frame(Daily = acf_d$acf, Weekly = acf_w$acf)
+colnames(acf_tab) = c("Data", "AC(1)", "AC(2)", "AC(3)", "AC(4)", "AC(5)")
+kable(acf_tab)
+acf_d = acf(logreturn_DJ_d, lag = 5, pl = FALSE)[1:5]
+acf_w = acf(logreturn_DJ_w, lag = 5, pl = FALSE)[1:5]
+
+lags <- c(5, 10, 20)
+
+make_tab = function(data, lags) {
+  LB_tab = matrix(nrow = length(lags),
+                  ncol = 2,
+                  dimnames = list(lags, c('Test', 'P-value')))
+  for (i in 1:length(lags)) {
+    temp = LB(data, lag=lags[i], p=0)
+
+    # significance level stars
+    pval = signif(temp$pval, 3)
+    for (qt in c(0.1, 0.05, 0.01)){
+      if (temp$pval < qt){
+        pval = paste(pval,'*', sep='')
+      }
+    }
+
+    LB_tab[i, 1] = sprintf(temp$test, fmt = '%#.2f')
+    LB_tab[i, 2] = pval
+  }
+
+  return(LB_tab)
+}
+
+daily_data = make_tab(logreturn_DJ_d, lags)
+rownames(daily_data) = paste(rownames(daily_data), '(DJ_d)', sep='')
+weekly_data = make_tab(logreturn_DJ_w, lags)
+rownames(weekly_data) = paste(rownames(weekly_data), '(DJ_w)', sep='')
+vr_tab = matrix(nrow = 2, ncol = 2,
+                dimnames = list(c('VR(DJ_d)', 'VR(DJ_w)'),
+                                c('Test', 'P-value')))
+
+
+vr_test = VDR(vr = logreturn_DJ_d, iq = 5)
+
+vr_tab[1, 1] = sprintf(vr_test$VR, fmt = '%#.2f')
+pval = sprintf(2*pnorm(-abs(vr_test$VR)), fmt = '%#.2f')
+for (qt in c(0.1, 0.05, 0.01)){
+  if (pval < qt){
+    pval = paste(pval,'*', sep='')
+  }
+}
+vr_tab[1, 2] = pval
+vr_test = VDR(vr = logreturn_DJ_w, iq = 5)
+vr_tab[2, 1] = sprintf(vr_test$VR, fmt = '%#.2f')
+pval = sprintf(2*pnorm(-abs(vr_test$VR)), fmt = '%#.2f')
+for (qt in c(0.1, 0.05, 0.01)){
+  if (pval < qt){
+    pval = paste(pval,'*', sep='')
+  }
+}
+vr_tab[2, 2] = pval
+
+
+
+test_table = cbind(t(daily_data), t(weekly_data), t(vr_tab))
+comment = paste('This table presents p-values of',
+                'Ljung-Box tests of no autocorrelation',
+                'and variance ratio test of different aggregated returns',
+                'Stars indicate significance levels.',
+                '*: p-value < 0.1,',
+                '**: p-value < 0.5,',
+                '***: p-value <0.01.')
+kable(test_table, caption=comment)
 
 
 
@@ -219,19 +290,35 @@ VDR(vr = DJ_w12, iq = 5)
 ############## Task 3 ################
 DJ_d$Year = as.character(DJ_d$Date)
 DJ_d$Year = as.integer( str_sub(DJ_d$Year,-2,-1))
-DJ_d1 = (DJ_d[DJ_d$Year>= 15 & DJ_d$Year <= 61,])
-DJ_d2 = (DJ_d[DJ_d$Year>= 62 & DJ_d$Year <= 90,])
+DJ_wwii = (DJ_d[DJ_d$Year>= 15 & DJ_d$Year <= 28,])
+DJ_wall_carsh = (DJ_d[DJ_d$Year>= 29 & DJ_d$Year <= 45,])
+DJ_pre_capm = (DJ_d[DJ_d$Year>= 46 & DJ_d$Year <= 61,])
+DJ_post_capm = (DJ_d[DJ_d$Year>= 62 & DJ_d$Year <= 90,])
 
 ### Line Plot
 ggplot()+
-  geom_line(mapping = aes( x=1:length(DJ_d1$r_Dow_Jones),
-                           y = DJ_d1$r_Dow_Jones), size=.5) +
+  geom_line(mapping = aes( x=1:length(DJ_wwii$r_Dow_Jones),
+                           y = DJ_wwii$r_Dow_Jones), size=.5) +
   labs(y='log returns', x='time horizon') +
-  ggtitle("from 1915 to 1955")
+  ggtitle("After WWII from 1915 to 1928")
 
 
-### acf plot
-acf(DJ_d1$r_Dow_Jones, main = "ACF of Dow Jones returns from 1915 to 1955")
+ggplot()+
+  geom_line(mapping = aes( x=1:length(DJ_wall_carsh$r_Dow_Jones),
+                           y = DJ_wall_carsh$r_Dow_Jones), size=.5) +
+  labs(y='log returns', x='time horizon') +
+  ggtitle("After great wall street crash from 1929 to 1945")
 
-LB(DJ_d1$r_Dow_Jones, lag=10, p=0)
-VDR(vr = DJ_d1$r_Dow_Jones, iq = 5)
+
+ggplot()+
+  geom_line(mapping = aes( x=1:length(DJ_pre_capm$r_Dow_Jones),
+                           y = DJ_pre_capm$r_Dow_Jones), size=.5) +
+  labs(y='log returns', x='time horizon') +
+  ggtitle("Pre CAPM from 1946 to 1961")
+
+
+ggplot()+
+  geom_line(mapping = aes( x=1:length(DJ_post_capm$r_Dow_Jones),
+                           y = DJ_post_capm$r_Dow_Jones), size=.5) +
+  labs(y='log returns', x='time horizon') +
+  ggtitle("Post CAPM from 1962 to 1990")
