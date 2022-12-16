@@ -290,24 +290,16 @@ VDR(vr = DJ_w12, iq = 5)
 ############## Task 3 ################
 DJ_d$Year = as.character(DJ_d$Date)
 DJ_d$Year = as.integer( str_sub(DJ_d$Year,-2,-1))
-DJ_wwii = (DJ_d[DJ_d$Year>= 15 & DJ_d$Year <= 28,])
-DJ_wall_carsh = (DJ_d[DJ_d$Year>= 29 & DJ_d$Year <= 45,])
+DJ_wwii_carsh = (DJ_d[DJ_d$Year>= 15 & DJ_d$Year <= 45,])
 DJ_pre_capm = (DJ_d[DJ_d$Year>= 46 & DJ_d$Year <= 61,])
 DJ_post_capm = (DJ_d[DJ_d$Year>= 62 & DJ_d$Year <= 90,])
 
 ### Line Plot
 ggplot()+
-  geom_line(mapping = aes( x=1:length(DJ_wwii$r_Dow_Jones),
-                           y = DJ_wwii$r_Dow_Jones), size=.5) +
+  geom_line(mapping = aes( x=1:length(DJ_wwii_carsh$r_Dow_Jones),
+                           y = DJ_wwii_carsh$r_Dow_Jones), size=.5) +
   labs(y='log returns', x='time horizon') +
-  ggtitle("After WWII from 1915 to 1928")
-
-
-ggplot()+
-  geom_line(mapping = aes( x=1:length(DJ_wall_carsh$r_Dow_Jones),
-                           y = DJ_wall_carsh$r_Dow_Jones), size=.5) +
-  labs(y='log returns', x='time horizon') +
-  ggtitle("After great wall street crash from 1929 to 1945")
+  ggtitle("After WWII from 1915 to 1945")
 
 
 ggplot()+
@@ -322,3 +314,37 @@ ggplot()+
                            y = DJ_post_capm$r_Dow_Jones), size=.5) +
   labs(y='log returns', x='time horizon') +
   ggtitle("Post CAPM from 1962 to 1990")
+
+
+### ACF and PACF plots
+#dev.off()
+acf(DJ_wwii_carsh$r_Dow_Jones, main = "ACF of WWII and Great depression")
+pacf(DJ_wwii_carsh$r_Dow_Jones, main="PACF of WWII and Great depression")
+acf(DJ_pre_capm$r_Dow_Jones, main = "ACF of Pre CAPM Dow Jones returns")
+pacf(DJ_pre_capm$r_Dow_Jones, main="PACF of Pre CAPM Dow Jones returns")
+acf(DJ_post_capm$r_Dow_Jones, main = "ACF of Post CAPM Dow Jones returns")
+pacf(DJ_post_capm$r_Dow_Jones, main="PACF of Post CAPM Dow Jones returns")
+
+
+daily_data = make_tab(DJ_wwii_carsh, lags)
+rownames(daily_data) = paste(rownames(daily_data), '(DJ_d)', sep='')
+daily_data = make_tab(DJ_pre_capm, lags)
+rownames(daily_data) = paste(rownames(daily_data), '(DJ_d)', sep='')
+daily_data = make_tab(DJ_post_capm, lags)
+rownames(daily_data) = paste(rownames(daily_data), '(DJ_d)', sep='')
+
+vr_tab = matrix(nrow = 3, ncol = 2,
+                dimnames = list(c('VR(wwii_carsh)',
+                                  'VR(pre_capm)', 'VR(post_capm)'),
+                                c('Test', 'P-value')))
+vr_test = VDR(vr = DJ_w4, iq = 3)
+vr_tab[1, 1] = sprintf(vr_test$VR, fmt = '%#.2f')
+pval = sprintf(2*pnorm(-abs(vr_test$VR)), fmt = '%#.2f')
+for (qt in c(0.1, 0.05, 0.01)){
+  if (pval < qt){
+    pval = paste(pval,'*', sep='')
+  }
+}
+vr_tab[1, 2] = pval
+
+

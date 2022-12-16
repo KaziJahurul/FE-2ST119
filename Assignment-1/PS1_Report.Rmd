@@ -294,7 +294,7 @@ day_10_data = make_tab(DJ_d10, lags)
 rownames(day_10_data) = paste(rownames(day_10_data), '(DJ_d)', sep='')
 
 vr_tab = matrix(nrow = 2, ncol = 2,
-                dimnames = list(c('VR(DJ_d)', 'VR(DJ_w)'),
+                dimnames = list(c('VR(DJ_d)', 'VR(DJ_d)'),
                                 c('Test', 'P-value')))
 vr_test = VDR(vr = DJ_d5, iq = 5)
 vr_tab[1, 1] = sprintf(vr_test$VR, fmt = '%#.2f')
@@ -345,12 +345,12 @@ From the above plots we observe for 4-week and 12-week Dow Jones return, acf doe
 Now we are going to apply Lung-Box test to check autocorrelation for 4-week and 12-week data set. The results are presented below:
 ```{r, echo=FALSE}
 week_4_data = make_tab(DJ_w4, lags)
-rownames(week_4_data) = paste(rownames(week_4_data), '(DJ_d)', sep='')
+rownames(week_4_data) = paste(rownames(week_4_data), '(DJ_w)', sep='')
 week_12_data = make_tab(DJ_w12, lags)
 rownames(week_12_data) = paste(rownames(week_12_data), '(DJ_w)', sep='')
 
 vr_tab = matrix(nrow = 2, ncol = 2,
-                dimnames = list(c('VR(DJ_d)', 'VR(DJ_w)'),
+                dimnames = list(c('VR(DJ_w)', 'VR(DJ_w)'),
                                 c('Test', 'P-value')))
 vr_test = VDR(vr = DJ_w4, iq = 3)
 vr_tab[1, 1] = sprintf(vr_test$VR, fmt = '%#.2f')
@@ -385,13 +385,160 @@ We observe here that, Ljunk-box with ten lags and variance ratio statistics are 
 
 ### Appropriate sub-periods:
 
+Now we are going to divide our sample to 3 sub group based on World war 1 and 2 including the great depression which includes year from 1915 to 1945, Pre CAPM from year 1946 to 1961 and post CAPM from year 1962 to 1990. Lets start with Doe Jones daily log returns data.
+
+```{r, echo=FALSE}
+############## Task 3 ################
+DJ_d$Year = as.character(DJ_d$Date)
+DJ_d$Year = as.integer( str_sub(DJ_d$Year,-2,-1))
+DJ_wwii_carsh = (DJ_d[DJ_d$Year>= 15 & DJ_d$Year <= 45,])
+DJ_pre_capm = (DJ_d[DJ_d$Year>= 46 & DJ_d$Year <= 61,])
+DJ_post_capm = (DJ_d[DJ_d$Year>= 62 & DJ_d$Year <= 90,])
+
+# calculate ACF and PACF
+par(mfrow=c(2,2))
+acf(DJ_wwii_carsh$r_Dow_Jones, main = "ACF of WWII and Great depression")
+pacf(DJ_wwii_carsh$r_Dow_Jones, main="PACF of WWII and Great depression")
+acf(DJ_pre_capm$r_Dow_Jones, main = "ACF of Pre CAPM Dow Jones returns")
+pacf(DJ_pre_capm$r_Dow_Jones, main="PACF of Pre CAPM Dow Jones returns")
+acf(DJ_post_capm$r_Dow_Jones, main = "ACF of Post CAPM Dow Jones returns")
+pacf(DJ_post_capm$r_Dow_Jones, main="PACF of Post CAPM Dow Jones returns")
+```
+
+From the above plots we observe for all three subset of Dow Jones return, ACF and PACF both exibit tailing off so they can be modeled with ARMA model, thus its a indication of autocorrelations..
+
+Now we are going to apply Lung-Box test to check autocorrelation for 4-week and 12-week data set. The results are presented below:
+
+```{r, echo=FALSE}
+wwii_carsh_data = make_tab(DJ_wwii_carsh$r_Dow_Jones, lags)
+rownames(wwii_carsh_data) = paste(rownames(wwii_carsh_data), '(Crash_WWII)', sep='')
+pre_capm_data = make_tab(DJ_pre_capm$r_Dow_Jones, lags)
+rownames(pre_capm_data) = paste(rownames(pre_capm_data), '(Pre_CAPM)', sep='')
+post_capm_data = make_tab(DJ_post_capm$r_Dow_Jones, lags)
+rownames(post_capm_data) = paste(rownames(post_capm_data), '(Post_CAPM)', sep='')
+
+vr_tab = matrix(nrow = 3, ncol = 2,
+                dimnames = list(c('VR(wwii_carsh)',
+                                  'VR(pre_capm)', 'VR(post_capm)'),
+                                c('Test', 'P-value')))
+
+vr_test = VDR(vr = DJ_wwii_carsh$r_Dow_Jones, iq = 5)
+vr_tab[1, 1] = sprintf(vr_test$VR, fmt = '%#.2f')
+pval = sprintf(2*pnorm(-abs(vr_test$VR)), fmt = '%#.2f')
+for (qt in c(0.1, 0.05, 0.01)){
+  if (pval < qt){
+    pval = paste(pval,'*', sep='')
+  }
+}
+vr_tab[1, 2] = pval
+vr_test = VDR(vr = DJ_pre_capm$r_Dow_Jones, iq = 5)
+vr_tab[2, 1] = sprintf(vr_test$VR, fmt = '%#.2f')
+pval = sprintf(2*pnorm(-abs(vr_test$VR)), fmt = '%#.2f')
+for (qt in c(0.1, 0.05, 0.01)){
+  if (pval < qt){
+    pval = paste(pval,'*', sep='')
+  }
+}
+vr_tab[2, 2] = pval
+vr_test = VDR(vr = DJ_post_capm$r_Dow_Jones, iq = 5)
+vr_tab[3, 1] = sprintf(vr_test$VR, fmt = '%#.2f')
+pval = sprintf(2*pnorm(-abs(vr_test$VR)), fmt = '%#.2f')
+for (qt in c(0.1, 0.05, 0.01)){
+  if (pval < qt){
+    pval = paste(pval,'*', sep='')
+  }
+}
+vr_tab[3, 2] = pval
+
+test_table = cbind(t(wwii_carsh_data), t(pre_capm_data), t(post_capm_data),
+                   t(vr_tab))
+comment = paste('This table presents p-values of Ljung-Box tests',
+                 'of no autocorrelation for 4-week and 12-week',
+                 'Stars indicate significance levels.',
+                 '*: p-value < 0.1,',
+                 '**: p-value < 0.5,',
+                 '***: p-value <0.01.')
+kable(t(test_table), caption=comment)
+```
+
+Here we observe that, Ljunk-box and variance ratio statistics are significant for all sub sample data. So we may conclude that for all sub sample there is autocorrelation.
 
 
+```{r, echo=FALSE}
+############## Task 3 ################
+DJ_w$Year = as.character(DJ_w$Date)
+DJ_w$Year = as.integer( str_sub(DJ_w$Year,-2,-1))
+DJ_wwii_carsh = (DJ_w[DJ_w$Year>= 15 & DJ_w$Year <= 45,])
+DJ_pre_capm = (DJ_w[DJ_w$Year>= 46 & DJ_w$Year <= 61,])
+DJ_post_capm = (DJ_w[DJ_w$Year>= 62 & DJ_w$Year <= 90,])
 
+# calculate ACF and PACF
+par(mfrow=c(2,2))
+acf(DJ_wwii_carsh$r_close, main = "ACF of WWII and Great depression")
+pacf(DJ_wwii_carsh$r_close, main="PACF of WWII and Great depression")
+acf(DJ_pre_capm$r_close, main = "ACF of Pre CAPM Dow Jones returns")
+pacf(DJ_pre_capm$r_close, main="PACF of Pre CAPM Dow Jones returns")
+acf(DJ_post_capm$r_close, main = "ACF of Post CAPM Dow Jones returns")
+pacf(DJ_post_capm$r_close, main="PACF of Post CAPM Dow Jones returns")
+```
 
+From the above plots we observe that for first subset of weekly data which includes 2 world war and the great depression, the ACF doesn't exibit a tailing off but PACF exibit tailing off for higher lags so they can be modeled with MA model, thus its a indication of slight autocorrelations. For pre CAPM sub period from year 1946 to 1961, the ACF plot doesn't show any taiingl off but PACF does, so we can model this sub period of data with MA model and its a indication of autocorrealtion. Now for the last sub period we observe tailing off for both ACF and PACF, thus we can model this sub period of data with ARMA model and thus it indicates the presense of autocorrelations.
 
+Now we are going to apply Lung-Box test to check autocorrelation for all 3 sub periods of weekly data set. The results are presented below:
 
+```{r, echo=FALSE}
+wwii_carsh_data = make_tab(DJ_wwii_carsh$r_close, lags)
+rownames(wwii_carsh_data) = paste(rownames(wwii_carsh_data), '(Crash_WWII)', sep='')
+pre_capm_data = make_tab(DJ_pre_capm$r_close, lags)
+rownames(pre_capm_data) = paste(rownames(pre_capm_data), '(Pre_CAPM)', sep='')
+post_capm_data = make_tab(DJ_post_capm$r_close, lags)
+rownames(post_capm_data) = paste(rownames(post_capm_data), '(Post_CAPM)', sep='')
 
+vr_tab = matrix(nrow = 3, ncol = 2,
+                dimnames = list(c('VR(wwii_carsh)',
+                                  'VR(pre_capm)', 'VR(post_capm)'),
+                                c('Test', 'P-value')))
+
+vr_test = VDR(vr = DJ_wwii_carsh$r_close, iq = 5)
+vr_tab[1, 1] = sprintf(vr_test$VR, fmt = '%#.2f')
+pval = sprintf(2*pnorm(-abs(vr_test$VR)), fmt = '%#.2f')
+for (qt in c(0.1, 0.05, 0.01)){
+  if (pval < qt){
+    pval = paste(pval,'*', sep='')
+  }
+}
+vr_tab[1, 2] = pval
+vr_test = VDR(vr = DJ_pre_capm$r_close, iq = 5)
+vr_tab[2, 1] = sprintf(vr_test$VR, fmt = '%#.2f')
+pval = sprintf(2*pnorm(-abs(vr_test$VR)), fmt = '%#.2f')
+for (qt in c(0.1, 0.05, 0.01)){
+  if (pval < qt){
+    pval = paste(pval,'*', sep='')
+  }
+}
+vr_tab[2, 2] = pval
+vr_test = VDR(vr = DJ_post_capm$r_close, iq = 5)
+vr_tab[3, 1] = sprintf(vr_test$VR, fmt = '%#.2f')
+pval = sprintf(2*pnorm(-abs(vr_test$VR)), fmt = '%#.2f')
+for (qt in c(0.1, 0.05, 0.01)){
+  if (pval < qt){
+    pval = paste(pval,'*', sep='')
+  }
+}
+vr_tab[3, 2] = pval
+
+test_table = cbind(t(wwii_carsh_data), t(pre_capm_data), t(post_capm_data),
+                   t(vr_tab))
+comment = paste('This table presents p-values of Ljung-Box tests',
+                 'of no autocorrelation for 4-week and 12-week',
+                 'Stars indicate significance levels.',
+                 '*: p-value < 0.1,',
+                 '**: p-value < 0.5,',
+                 '***: p-value <0.01.')
+kable(t(test_table), caption=comment)
+```
+
+Here we observe that, Ljunk-box and variance ratio statistics are non significant for first two period of data set. For Post CAPM sub period both test statistics are significant thus, we may conclude that in this sub sample there is autocorrelation present. 
 
 
 

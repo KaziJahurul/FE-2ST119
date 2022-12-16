@@ -237,7 +237,7 @@ Now we are going to apply Lung-Box test to check autocorrelation for
 \hline
 VR(DJ\_d) & 1.65 & 0.10\\
 \hline
-VR(DJ\_w) & 0.89 & 0.37\\
+VR(DJ\_d) & 0.89 & 0.37\\
 \hline
 \end{tabular}
 \end{table}
@@ -269,11 +269,11 @@ Now we are going to apply Lung-Box test to check autocorrelation for
 \hline
   & Test & P-value\\
 \hline
-5(DJ\_d) & 5.30 & 0.38\\
+5(DJ\_w) & 5.30 & 0.38\\
 \hline
-10(DJ\_d) & 18.33 & 0.0497**\\
+10(DJ\_w) & 18.33 & 0.0497**\\
 \hline
-20(DJ\_d) & 27.65 & 0.118\\
+20(DJ\_w) & 27.65 & 0.118\\
 \hline
 5(DJ\_w) & 7.39 & 0.193\\
 \hline
@@ -281,7 +281,7 @@ Now we are going to apply Lung-Box test to check autocorrelation for
 \hline
 20(DJ\_w) & 33.44 & 0.0302**\\
 \hline
-VR(DJ\_d) & 1.74 & 0.08*\\
+VR(DJ\_w) & 1.74 & 0.08*\\
 \hline
 VR(DJ\_w) & 1.85 & 0.06*\\
 \hline
@@ -294,5 +294,119 @@ statistics are significant for 4-week data. On the other hand for
 autocorrelation tests are significant. So we can be concluded that the
 both 4-week and 12-week returns maybe autocorrelated for high lag
 values.
+
+\hypertarget{appropriate-sub-periods}{%
+\subsubsection{Appropriate sub-periods:}\label{appropriate-sub-periods}}
+
+Now we are going to divide our sample to 3 sub group based on World war
+1 and 2 including the great depression which includes year from 1915 to
+1945, Pre CAPM from year 1946 to 1961 and post CAPM from year 1962 to
+1990. Lets start with Doe Jones daily log returns data.
+
+\includegraphics{PS1_Report_files/figure-latex/unnamed-chunk-10-1.pdf}
+\includegraphics{PS1_Report_files/figure-latex/unnamed-chunk-10-2.pdf}
+
+From the above plots we observe for all three subset of Dow Jones
+return, ACF and PACF both exibit tailing off so they can be modeled with
+ARMA model, thus its a indication of autocorrelations..
+
+Now we are going to apply Lung-Box test to check autocorrelation for
+4-week and 12-week data set. The results are presented below:
+
+\begin{table}
+
+\caption{\label{tab:unnamed-chunk-11}This table presents p-values of Ljung-Box tests of no autocorrelation for 4-week and 12-week Stars indicate significance levels. *: p-value < 0.1, **: p-value < 0.5, ***: p-value <0.01.}
+\centering
+\begin{tabular}[t]{l|l|l}
+\hline
+  & Test & P-value\\
+\hline
+5(Crash\_WWII) & 111.13 & 0***\\
+\hline
+10(Crash\_WWII) & 151.76 & 0***\\
+\hline
+20(Crash\_WWII) & 167.37 & 0***\\
+\hline
+5(Pre\_CAPM) & 178.04 & 0***\\
+\hline
+10(Pre\_CAPM) & 190.19 & 0***\\
+\hline
+20(Pre\_CAPM) & 211.16 & 0***\\
+\hline
+5(Post\_CAPM) & 208.53 & 0***\\
+\hline
+10(Post\_CAPM) & 221.98 & 0***\\
+\hline
+20(Post\_CAPM) & 229.58 & 0***\\
+\hline
+VR(wwii\_carsh) & 3.14 & 0.00***\\
+\hline
+VR(pre\_capm) & 1.73 & 0.08*\\
+\hline
+VR(post\_capm) & 5.35 & 0.00***\\
+\hline
+\end{tabular}
+\end{table}
+
+Here we observe that, Ljunk-box and variance ratio statistics are
+significant for all sub sample data. So we may conclude that for all sub
+sample there is autocorrelation.
+
+\includegraphics{PS1_Report_files/figure-latex/unnamed-chunk-12-1.pdf}
+\includegraphics{PS1_Report_files/figure-latex/unnamed-chunk-12-2.pdf}
+
+From the above plots we observe that for first subset of weekly data
+which includes 2 world war and the great depression, the ACF doesn't
+exibit a tailing off but PACF exibit tailing off for higher lags so they
+can be modeled with MA model, thus its a indication of slight
+autocorrelations. For pre CAPM sub period from year 1946 to 1961, the
+ACF plot doesn't show any taiingl off but PACF does, so we can model
+this sub period of data with MA model and its a indication of
+autocorrealtion. Now for the last sub period we observe tailing off for
+both ACF and PACF, thus we can model this sub period of data with ARMA
+model and thus it indicates the presense of autocorrelations.
+
+Now we are going to apply Lung-Box test to check autocorrelation for all
+3 sub periods of weekly data set. The results are presented below:
+
+\begin{table}
+
+\caption{\label{tab:unnamed-chunk-13}This table presents p-values of Ljung-Box tests of no autocorrelation for 4-week and 12-week Stars indicate significance levels. *: p-value < 0.1, **: p-value < 0.5, ***: p-value <0.01.}
+\centering
+\begin{tabular}[t]{l|l|l}
+\hline
+  & Test & P-value\\
+\hline
+5(Crash\_WWII) & 5.61 & 0.346\\
+\hline
+10(Crash\_WWII) & 10.24 & 0.42\\
+\hline
+20(Crash\_WWII) & 20.46 & 0.43\\
+\hline
+5(Pre\_CAPM) & 3.29 & 0.655\\
+\hline
+10(Pre\_CAPM) & 14.84 & 0.138\\
+\hline
+20(Pre\_CAPM) & 37.32 & 0.0107**\\
+\hline
+5(Post\_CAPM) & 16.10 & 0.00657***\\
+\hline
+10(Post\_CAPM) & 24.74 & 0.00585***\\
+\hline
+20(Post\_CAPM) & 32.73 & 0.0361**\\
+\hline
+VR(wwii\_carsh) & 1.42 & 0.16\\
+\hline
+VR(pre\_capm) & -0.57 & 0.57\\
+\hline
+VR(post\_capm) & -2.55 & 0.01**\\
+\hline
+\end{tabular}
+\end{table}
+
+Here we observe that, Ljunk-box and variance ratio statistics are non
+significant for first two period of data set. For Post CAPM sub period
+both test statistics are significant thus, we may conclude that in this
+sub sample there is autocorrelation present.
 
 \end{document}
