@@ -1,0 +1,388 @@
+---
+title: "Financial Econometrics: Problem Set 1"
+author:
+- Rebecca Cardebring
+- Kazi Jahurul Islam
+- Jack (Quan Cheng) Xie
+date: "January 2023"
+output:
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+library(FE) # course package
+
+library(tidyverse) # plot
+library(psych) # summary
+
+library(knitr) # for tables
+opts_chunk$set(echo = F) # do not show code
+
+library(kableExtra)
+
+```
+
+## A. Distributional properties of Dow Jones index returns
+
+The Dow Jones Industrial Average (DJIA) is a stock market index of 30 prominent companies listed on stock exchanges in the United States and one of the oldest and most commonly followed equity indexes. In this section we examine the statistical properties of DJIA.
+
+```{r plotDJ}
+
+daily <- DJ_d$r_Dow_Jones
+weekly <- DJ_w$r_close
+
+# par(mfcol=c(2, 1))
+
+fig.dim = c(6, 3)
+
+plot(daily, type = 'l', main = 'DOW Daily Returns',
+     xlab = 'Time Horizon', ylab = 'Log Return')
+
+
+plot(weekly, type = 'l', main = 'DOW Weekly Returns', 
+     xlab = 'Time Horizon', ylab = 'Log return')
+
+```
+
+### 1. DOW Jones Descriptive Statistics
+
+```{r distrib prop}
+
+desc_daily <- data.frame(describe(DJ_d$r_Dow_Jones), row.names = "Daily")
+desc_weekly <- data.frame(describe(DJ_w$r_close), row.names = "Weekly")
+
+descr <- t(rbind.data.frame(desc_daily, desc_weekly))
+
+# show only selective statistics
+descr <- descr[c("n", "mean", "sd", "median", "min", "max", "skew", "kurtosis"), ]
+
+rownames(descr) <- c("Observations", "Mean", "Standard Deviation",
+                   "Median", "Min", "Max",
+                   "Skewness", "Kurtosis")
+
+kbl(descr, digits=3, booktabs=T, caption = 'Dow Jones Index Returns Descriptive Statistics')
+```
+
+### 2. Empirical Distributional of Log Returns
+
+```{r qq_normal, out.width="90%"}
+
+# standardize first and second moments with standard normal
+std_daily = (daily - mean(daily)) / sd(daily)
+std_weekly = (weekly - mean(weekly)) / sd(weekly)
+
+# plot qq
+par(mfcol=c(1, 2)) # plot side-by-side
+
+qqnorm(std_daily, main = c("Normal Q-Q Plot:", "Daily Log Returns"))
+qqline(std_daily, col = "red")
+
+qqnorm(std_weekly, main = c("Normal Q-Q Plot:", "Weekly Log Returns"))
+qqline(std_weekly, col = "red")
+```
+
+```{r qq_tdist, out.width="90%"}
+
+# need 2 parameters to normalize the data (mean and std dev)
+df = 3
+
+# standardize data
+std_daily_t = std_daily * sqrt(df / (df-2))
+std_weekly_t = std_weekly * sqrt(df / (df-2))
+
+# plot qq
+par(mfcol=c(1, 2)) # plot side-by-side
+
+qqplot(rt(length(std_daily_t), df = df),
+       std_daily_t,
+       main = c("T-distribution Q-Q Plot:", "Daily Log Returns"),
+       xlab = "Theoretical quantiles",
+       ylab = "Sample quantiles"
+       )
+
+qqline(std_daily_t, col = "red")
+
+qqplot(rt(length(std_weekly_t), df = df),
+       std_weekly_t,
+       main = c("T-distribution Q-Q Plot:", "Weekly Log Returns"),
+       xlab = "Theoretical Quantiles",
+       ylab = "Sample Quantiles"
+       )
+
+qqline(std_weekly_t, col = "red")
+```
+
+### 3. Distributional Goodness-of-fit Tests
+
+```{r chi-test normal}
+
+test_fit <- function(data,
+                     r_theoretical, # theoretical cdf, e.g. pnrom, pt
+                     b=30 # number of quantile bins
+                     ){
+  
+  # divide quantile bins equally
+  bin = 1:b/b
+  
+  # vector of quantiles
+  vq = NULL; for(val in bin) vq = c(vq, sum(r_theoretical <= val)) 
+  vq = c(vq[1], diff(vq))
+  
+  # calculate chi-squared stat and p-value
+  chi_test = sum((vq-length(data)/b)**2 / (length(data) / b))
+  pval = 1 - pchisq(chi_test, df = b - 3)
+  
+  return(list(test=chi_test, pval=pval))
+  
+}
+
+df = 4
+
+dimnames <- list(c('Daily', 'Weekly'),
+                 c('Normal', 'Student t (df=4)', 'Mixed normal'))
+
+# result tables
+tab <- matrix(nrow=2, ncol=3, dimnames=dimnames)
+tab.p <- matrix(nrow=2, ncol=3, dimnames=dimnames)
+
+# test with normal
+fit_daily = test_fit(std_daily, pnorm(std_daily))
+fit_weekly = test_fit(std_weekly, pnorm(std_weekly))
+
+tab[1, 1] <- fit_daily$test
+tab.p[1, 1] <- fit_daily$pval
+
+tab[2, 1] <- fit_weekly$test
+tab.p[2, 1] <- fit_weekly$pval
+
+# test with t-distribution
+fit_daily = test_fit(std_daily_t, pt(std_daily_t, df=df))
+fit_weekly = test_fit(std_weekly_t, pt(std_weekly_t, df=df))
+
+tab[1, 2] <- fit_daily$test
+tab.p[1, 2] <- fit_daily$pval
+
+tab[2, 2] <- fit_weekly$test
+tab.p[2, 2] <- fit_weekly$pval
+
+# test with mixed normal
+
+
+# show table
+
+kbl(tab, booktabs=T, digits=5, caption='Goodness-of-fit: Chi-square test statistic')
+kbl(tab.p, booktabs=T, digits=5, caption='Goodness-of-fit: p-value')
+
+```
+
+## B. Dynamic properties of financial return series
+
+Please see below for some summary statistics of the international stock indexes.
+
+```{r, results='asis'}
+# generate log returns
+lret = apply(log(index_d), 2, diff)
+# summarize data
+descr <- describe(lret)
+descr <- descr[, c("n", "mean", "sd", "median", "min", "max", "skew", "kurtosis")]
+
+colnames(descr) <- c("Obs.", "Mean", "Std Dev", "Median", "Min", "Max", "Skew", "Kurt")
+
+kbl(descr, caption='Summary Statistics of Daily Index Returns',
+    digits=5, booktabs=T)
+```
+
+### 1. Autocorrelation of international stock indexes
+
+```{r acf_pacf, results='asis'}
+acf_tabs <- function(data, lag.max=20, plot=T){
+  # create tables for ACF and PACF values
+  acf_tab <- matrix(nrow=ncol(data), ncol=lag.max,
+                    dimnames=list(index=colnames(data),
+                                  lag=1:lag.max
+                    )
+  )
+  pacf_tab <- matrix(nrow=ncol(data), ncol=lag.max,
+                     dimnames=list(index=colnames(data),
+                                   lag=1:lag.max)
+  )
+  
+  for (c in colnames(data)){
+    # data for each column removing na
+    x <- data[!is.na(data[,c]), c]
+    
+    if (plot){
+    # two columns for ACF and PACF
+    par(mfcol=c(1, 2))
+    }
+    
+    # plot ACf and PACF
+    acf_val <- acf(x, main=c, plot=plot)
+    pacf_val <- pacf(x, main=c, plot=plot)
+    # save coefficients
+    acf_tab[c, ] <- acf_val$acf[2:(lag.max+1)]
+    pacf_tab[c, ] <- pacf_val$acf[1:lag.max]
+  }
+  return(list(acf=acf_tab, pacf=pacf_tab))
+}
+tabs = acf_tabs(lret)
+# xtable(t(tabs$acf))
+# xtable(t(tabs$pacf))
+kbl(t(tabs$acf), digits=5, booktabs=T)
+kbl(t(tabs$pacf), digits=5, booktabs=T)
+```
+
+### 2. Ljung-Box Tests
+
+```{r ljungbox, results='asis'}
+
+# Ljung-Box test function
+LB <- function(data, lag, p){
+  # time periods
+  T <- length(data)
+  # get ACF coeffs
+  rho = acf(data, lag.max=lag, plot=F)$acf
+  # remove 0th lag coeffs then square
+  rho_sq = rho[2:(lag+1)]**2
+  # test statistic
+  Q = T * (T+2) * sum(rho_sq / (T-1:lag))
+  # return test and p-value
+  return(list(test=Q, pval=1-pchisq(Q, df=lag-p)))
+}
+
+# lag periods to test
+lags <- c(10, 50, 100)
+
+
+p <- 0
+
+# generate table of Ljung-Box test results
+LB_tab <- function(data,
+                   lags = c(10, 50, 100),
+                   p = 0 # degrees of freedom df = lag - p, where p is number of parameters estimated
+                   ){
+  # table of LB test statistics
+  LB_tests <- matrix(nrow=length(lags), ncol=ncol(data),
+                    dimnames=list(lag=lags, index=colnames(data))
+                    )
+  
+  # table of Chi-square test p-values
+  LB_pvals <- matrix(nrow=length(lags), ncol=ncol(data),
+                     dimnames=list(lag=lags, index=colnames(data))
+                     )
+  
+  # run Ljung-Box tests
+  for (c in colnames(data)){
+    for (i in 1:3){
+      # remove na from data
+      x <- data[!is.na(data[,c]), c]
+      LB_res <- LB(x, lag=lags[i], p)
+      # significance level stars
+      pval <- signif(LB_res$pval, 3)
+      for (qt in c(0.1, 0.05, 0.01)){
+        if (LB_res$pval < qt){
+          pval <- paste(pval,'*', sep='')
+        }
+      }
+      # save test stat and pvals
+      LB_tests[i, c] <- LB_res$test
+      LB_pvals[i, c] <- pval
+    }
+  }
+  return(list(test=LB_tests, pvals=LB_pvals))
+}
+
+
+tab <- LB_tab(lret)
+
+kbl(tab$pvals, booktabs=T, caption = "Ljung-Box Test p-values") %>%
+  kable_classic() %>%
+  add_footnote(
+    c('This table presents p-values of Ljung-Box tests of no autocorrelation.',
+      'Significance levels: *p-value < 0.1, ** p-value < 0.5, *** p-value <0.01.'),
+    notation="none")
+```
+
+### 3. Cross-correlations
+
+```{r crosscor}
+corr_mat <- function(data, lag=1) {
+  # column names
+  cols <- colnames(data)
+  # correlation matrix
+  corr_mat <- matrix(nrow = ncol(data), ncol = ncol(data),
+                     dimnames=list(lags=cols, cols))
+  for (c1 in cols){
+    for (c0 in cols){
+      # periods with either are NA
+      isna <- (is.na(data[, c1]) | is.na(data[, c0]))
+      # non-na returns of pair
+      pair_data <- data[!isna, c(c1, c0)]
+      T <- nrow(pair_data)
+      # add period lag autocorrelation to matrix
+      corr_mat[c1, c0] <- cor(pair_data[1:(T-lag),c1], pair_data[(1+lag):T,c0])
+      # acf(pair_data)
+      # pacf(pair_data)
+    }
+  }
+  # re-label past/current period returns
+  # rownames(corr_mat) <- paste(cols, '(t-1)', sep='')
+  # colnames(corr_mat) <- paste(cols, '(t)', sep='')
+  return(corr_mat)
+}
+
+ncols = length(colnames(lret))
+
+kbl(corr_mat(lret, lag=0), caption = "Cross-correlations with Period $t$",
+    booktabs = T, digits = 3) %>%
+  add_header_above(c("", "Period t"=ncols)) %>%
+  kable_styling(latex_options = c("repeat_header"))
+
+kbl(corr_mat(lret, lag=0), caption = "Cross-correlations with Period $t-1$",
+    booktabs = T, digits = 3) %>%
+  add_header_above(c("", "Period t"=ncols)) %>%
+  kable_styling(latex_options = c("repeat_header"))
+
+```
+
+### 4. Squared log returns
+
+```{r sq_lret ACF}
+
+# generate squared log returns
+sq_lret = lret^2
+
+# ACF and PACF
+tabs = acf_tabs(sq_lret)
+
+kbl(t(tabs$acf), booktabs=T)
+kbl(t(tabs$pacf), booktabs=T)
+
+```
+
+```{r sq_lret LB}
+# Ljung-Box test
+tab <- LB_tab(sq_lret)
+
+kbl(tab$pvals, booktabs=T,
+    caption = "Ljung-Box Test p-values") %>%
+  kable_classic() %>%
+  add_footnote(
+    c('This table presents p-values of Ljung-Box tests of no autocorrelation.',
+      'Significance levels: *p-value < 0.1, ** p-value < 0.5, *** p-value <0.01.'),
+    notation="none")
+```
+
+```{r sq_lret-crosscor}
+ncols = length(colnames(lret))
+
+kbl(corr_mat(sq_lret, lag=0), caption = "Cross-correlations with Period $t$",
+    booktabs = T, digits = 3) %>%
+  add_header_above(c("", "Period t"=ncols)) %>%
+  kable_styling(latex_options = c("repeat_header"))
+
+kbl(corr_mat(sq_lret, lag=0), caption = "Cross-correlations with Period $t-1$",
+    booktabs = T, digits = 3) %>%
+  add_header_above(c("", "Period t"=ncols)) %>%
+  kable_styling(latex_options = c("repeat_header"))
+```
