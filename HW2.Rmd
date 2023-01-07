@@ -1,0 +1,250 @@
+---
+title: "Financial Econometrics: Problem Set 2"
+author:
+- Rebecca Cardebring
+- Kazi Jahurul Islam
+- Jack (Quan Cheng) Xie
+date: "January 2023"
+output:
+  pdf_document:
+    keep_tex: true
+    df_print: kable
+---
+
+```{r setup, include=FALSE}
+library(FE) # course package
+
+library(tidyverse) # plot
+library(psych) # summary
+
+library(knitr)
+opts_chunk$set(echo = FALSE)
+
+library(kableExtra) # for latex tables
+library(stargazer) # for regression tables
+```
+
+## 
+
+Part 1: Capital Asset Pricing Model
+
+A. Size and Book-to-Market Effects
+
+### 1. Descriptive statistics of portfolios
+
+```{r}
+
+descr <- describe(portfolio_m)
+
+descr <- descr[, c("n", "mean", "sd", "median", "min", "max", "skew", "kurtosis")]
+
+colnames(descr) <- c("Observations", "Mean", "StdDev",
+                   "Median", "Min", "Max",
+                   "Skewness", "Kurtosis")
+
+```
+
+```{r}
+
+# market equity columns
+
+par(mfcol=c(2, 2))
+
+for (col in c("Mean", "StdDev")){
+  
+  for (lab in c("ME", "MEBE")){
+    
+    # variable names
+    vars = NULL
+    for(i in 1:10) vars = c(vars, paste(lab, i, sep=""))
+    
+    plot(descr[vars, c(col)],
+         xlab = "Decile", ylab = paste(lab, col)
+         )
+  }
+}
+```
+
+### 2. CAPM and Size and Book-to-Market Portfolios
+
+```{r}
+
+# variable names
+MEBE = NULL
+for(i in 1:10) MEBE = c(MEBE, paste("MEBE", i, sep=""))
+
+ME = NULL
+for(i in 1:10) ME = c(ME, paste("ME", i, sep=""))
+
+Rxy <- NULL
+for(i in 1:10) for(j in 1:10) Rxy <- c(Rxy, paste("R", i, j, sep=""))
+
+cols = c("Market", MEBE, ME, Rxy)
+
+# compute excess returns
+rf <- portfolio_m[, c("Tbill")]
+z <- portfolio_m[, cols]
+z <- apply(z, 2, function(x) x - rf)
+
+z <- data.frame(z)
+colnames(z) <- cols
+
+# time variables
+tcols <- c("year", "month")
+z[,tcols] <- portfolio_m[,tcols]
+
+z <- z[, c(tcols, cols)]
+
+ncols = length(cols)
+
+tmp1 <- NULL
+tmp2 <- NULL
+tmp3 <- NULL
+
+for (col in cols[1:ncols]){
+  model <- lm(data = z, formula = paste("Market ~", col) )
+  
+  # get market beta
+  tmp1 <- c(tmp1, model$coefficients[col])
+  
+  # get R-squared
+  tmp2 <- c(tmp2, summary(model)$r.squared)
+  
+  # get adj. R-squared
+  tmp3 <- c(tmp3, summary(model)$adj.r.squared)
+}
+
+# market beta
+coeffs <- data.frame(list(
+  "Decile" = 1:10, "MEBE" = tmp1[MEBE], "ME" = tmp1[ME]
+  ), row.names = 1:10)
+
+# r-squared
+r.sq <- data.frame(list(
+  "Decile" = 1:10, "MEBE" = tmp2[1:10], "ME" = tmp2[11:20]
+  ), row.names = 1:10)
+
+
+kbl(coeffs,
+    digits=3,
+    caption = "Market Betas by Book-to-Market Ratio and Size Deciles")
+
+par(mfcol=c(2, 2))
+
+for (lab in c("MEBE", "ME")){
+  plot(coeffs[, lab],
+       xlab = paste(lab, "Decile"),
+       ylab = "Market Beta")
+  
+  plot(r.sq[, lab],
+       xlab = paste(lab, "Decile"),
+       ylab = "R-squared")
+}
+```
+
+```{r}
+  
+# stargazer(
+#   lm(data = coeffs, formula = "ME ~ Decile"),
+#   lm(data = coeffs, formula = "MEBE ~ Decile"),
+#   lm(data = r.sq, formula = "ME ~ Decile"),
+#   lm(data = r.sq, formula = "MEBE ~ Decile"),
+#   title = "Title"
+# )
+```
+
+### 3. Joint test of CAPM
+
+```{r}
+
+depvars <- cols[2:ncols] # dependent variables
+lc <- paste(depvars, collapse=" + ") # linear combination
+
+model <- lm(data = z, formula = paste("Market ~", lc))
+
+summary(model)
+
+fstat <- summary(model)$fstatistic
+
+pf(fstat["value"], fstat["numdf"], fstat["dendf"], lower.tail=F)
+```
+
+```{r}
+hyp <- NULL # hypothesis
+for(var in depvars) hyp <- c(hyp, paste(var, "= 0"))
+
+library(car)
+summary(linearHypothesis(model, hyp))
+```
+
+### 4. Period-Specific Betas
+
+```{r}
+
+
+ftest <- function(formula, data, lower.tail=F){
+  # run regression
+  model = lm(formula = formula, data=data)
+  
+  # get f-statistic
+  fstat <- summary(model)$fstatistic
+  
+  # calculate pvalue
+  fstat['pval'] <- pf(fstat["value"],
+                      fstat["numdf"], fstat["dendf"],
+                      lower.tail=lower.tail)
+  # return results
+  return(fstat)
+  
+}
+years <- z['year']
+preff <- years < 1992 # pre-Fama-French
+
+lc = paste(Rxy, collapse=" + ")
+
+print("Before Fama-French")
+p = preff
+fstat <- ftest(formula = paste("Market ~", lc), data = z[p, ])
+print(fstat)
+
+
+print("After Fama-French")
+p = !preff
+fstat <- ftest(formula = paste("Market ~", lc), data = z[p, ])
+print(fstat)
+
+# start and end years
+yend <- max(years) + 1
+ybeg <- min(years)
+
+yspan <- yend - ybeg # year span
+
+for (div in c(2, 5, 9)){
+  
+  cat("\n------------------------\n\n")
+  
+  pspan <- yspan / div # period span
+  
+  for (n in 1:div){
+    
+    # period beginning and end
+    pbeg <- round(ybeg + (n-1) * pspan)
+    pend <- round(ybeg + n * pspan)
+    
+    # period filter
+    p <- (pbeg <= years) & (years < pend)
+    
+    print(sprintf(paste("(%d of %d)", pbeg, "to", pend), n, div))
+    
+    fstat <- ftest(formula = paste("Market ~", lc), data = z[p, ])
+    print(fstat)
+
+  }
+}
+
+
+```
+
+```{r}
+
+```
