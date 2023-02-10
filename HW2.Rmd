@@ -26,14 +26,23 @@ library(stargazer) # for regression tables
 
 ## 
 
-Part 1: Capital Asset Pricing Model
+# Part 1: Capital Asset Pricing Model
 
-A. Size and Book-to-Market Effects
+## A. Size and Book-to-Market Effects
 
 ### 1. Descriptive statistics of portfolios
 
+***Analyze the descriptive statistics of the returns of the different portfolios. Do you find systematic differences in dependence of size and the book-to-market ratio?***
+
+The following plots summarizes the descriptive statistics of size (ME) and book-to-market (MEBE) portfolios by deciles.
+
+-   Size deciles downward trending in all measures.
+
+-   Book-to-market deciles upward trending.
+
 ```{r}
 
+# describe portfolio
 descr <- describe(portfolio_m)
 
 descr <- descr[, c("n", "mean", "sd", "median", "min", "max", "skew", "kurtosis")]
@@ -41,19 +50,30 @@ descr <- descr[, c("n", "mean", "sd", "median", "min", "max", "skew", "kurtosis"
 colnames(descr) <- c("Observations", "Mean", "StdDev",
                    "Median", "Min", "Max",
                    "Skewness", "Kurtosis")
-
 ```
 
 ```{r}
 
-# market equity columns
+# TODO:
+# common x/y axes
+# column and row titles
 
-par(mfcol=c(2, 2))
+layout(mat = matrix(c(1:8), nrow=4, ncol=2),
+       heights = rep(2, 4), # Heights of the two rows
+       widths = rep(2, 2)) # Widths of the two columns
 
-for (col in c("Mean", "StdDev")){
+# par(mfcol=c(4, 2))
+
+# set margins
+par(mar=c(4, 4, 0, 0))
+
+# for market size and book-to-market ratio
+for (lab in c("ME", "MEBE")){
   
-  for (lab in c("ME", "MEBE")){
+  # plot descriptive statistics
+  for (col in c("Mean", "StdDev", "Skewness", "Kurtosis")){
     
+    # dev.new(width=2, height=1, unit="in")
     # variable names
     vars = NULL
     for(i in 1:10) vars = c(vars, paste(lab, i, sep=""))
@@ -67,25 +87,55 @@ for (col in c("Mean", "StdDev")){
 
 ### 2. CAPM and Size and Book-to-Market Portfolios
 
+***For all individual size and book-to-market portfolios as well as the market portfolio(s), compute the corresponding excess returns. Then, estimate the CAPM for selected portfolios and answer the following questions***
+
+***(a) Test the validity of the CAPM for the individual size and book-to-market portfolios. Can you confirm the CAPM relationship across the cross-section of size and bookto-market portfolios?***
+
+-   Plot excess returns (intercepts) and confidence bands (three different levels?).
+
+-   Make excess returns table for Rxy x-th size and y-th book-to-market percentiles
+
+-   If excess returns significantly different from zero then CAPM fails.
+
+***(b) Is there a systematic relation between the estimated market beta and size as well as the book-to-market ratio? Interpret your findings.***
+
+-   Plot confidence bands around betas
+
+-   Beta is downward trending for size portfolios (big companies are less volatile) and upward trending for book-to-market (More volatile? Does this make sense?).
+
+-   Check/plot significance levels.
+
+**(c) Is there a systematic relation between the R\^2 and market capitalization as well as book-to-market ratio? What does this mean?**
+
+-   R-square is upward trending for size. The bigger the size, the more the market explains variations in portfolio returns. Makes sense as larger companies make up more of the market.
+
+-   R-square is largely constant across book-to-market deciles. Market explains less the larger MEBE portfolios.
+
 ```{r}
 
 # variable names
-MEBE = NULL
-for(i in 1:10) MEBE = c(MEBE, paste("MEBE", i, sep=""))
 
+# size column names
 ME = NULL
 for(i in 1:10) ME = c(ME, paste("ME", i, sep=""))
 
+# book-to-market column names
+MEBE = NULL
+for(i in 1:10) MEBE = c(MEBE, paste("MEBE", i, sep=""))
+
+# portfolio returns for x-th ME and y-th MEBE percentile
 Rxy <- NULL
 for(i in 1:10) for(j in 1:10) Rxy <- c(Rxy, paste("R", i, j, sep=""))
 
-cols = c("Market", MEBE, ME, Rxy)
+# list of market and portfolio column names
+cols = c("Market", ME, MEBE, Rxy)
 
-# compute excess returns
+# risk-free rate
 rf <- portfolio_m[, c("Tbill")]
+
+# excess returns: gross returns minus risk-free
 z <- portfolio_m[, cols]
 z <- apply(z, 2, function(x) x - rf)
-
 z <- data.frame(z)
 colnames(z) <- cols
 
@@ -100,38 +150,65 @@ ncols = length(cols)
 tmp1 <- NULL
 tmp2 <- NULL
 tmp3 <- NULL
+tmp4 <- NULL
 
+# iterate through MEx, MEBEx, Rxy portfolios
 for (col in cols[1:ncols]){
-  model <- lm(data = z, formula = paste("Market ~", col) )
+  
+  # estimate
+  model <- lm(data = z, formula = paste(col, "~ Market") )
   
   # get market beta
-  tmp1 <- c(tmp1, model$coefficients[col])
+  tmp1 <- c(tmp1, model$coefficients["Market"])
+  
+  # excess returns
+  tmp2 <- c(tmp2, model$coefficients["(Intercept)"])
   
   # get R-squared
-  tmp2 <- c(tmp2, summary(model)$r.squared)
+  tmp3 <- c(tmp3, summary(model)$r.squared)
   
   # get adj. R-squared
-  tmp3 <- c(tmp3, summary(model)$adj.r.squared)
+  tmp4 <- c(tmp4, summary(model)$adj.r.squared)
 }
 
 # market beta
 coeffs <- data.frame(list(
-  "Decile" = 1:10, "MEBE" = tmp1[MEBE], "ME" = tmp1[ME]
+  "Decile" = 1:10, "ME" = tmp1[1:10], "MEBE" = tmp1[11:20]
   ), row.names = 1:10)
+
+# excess returns
+alpha <- data.frame(list(
+  "Decile" = 1:10, "ME" = tmp2[1:10], "MEBE" = tmp2[11:20]
+  ), row.names = 1:10)
+
 
 # r-squared
 r.sq <- data.frame(list(
-  "Decile" = 1:10, "MEBE" = tmp2[1:10], "ME" = tmp2[11:20]
+  "Decile" = 1:10, "ME" = tmp3[1:10], "MEBE" = tmp3[11:20]
   ), row.names = 1:10)
 
+```
 
+```{r}
+
+# table of coefficients
 kbl(coeffs,
-    digits=3,
+    digits=3, booktabs=T,
     caption = "Market Betas by Book-to-Market Ratio and Size Deciles")
 
-par(mfcol=c(2, 2))
+# plot coefficients and R-squared
+layout(mat = matrix(c(1:6), nrow=3, ncol=2),
+       heights = rep(2, 4), # Heights of the two rows
+       widths = rep(2, 2)) # Widths of the two columns
 
-for (lab in c("MEBE", "ME")){
+par(mar=c(4, 4, 0, 0))
+
+for (lab in c("ME", "MEBE")){
+  
+  plot(alpha[, lab],
+       xlab = paste(lab, "Decile"),
+       ylab = "Excess Returns")
+  
   plot(coeffs[, lab],
        xlab = paste(lab, "Decile"),
        ylab = "Market Beta")
@@ -143,41 +220,54 @@ for (lab in c("MEBE", "ME")){
 ```
 
 ```{r}
-  
-# stargazer(
-#   lm(data = coeffs, formula = "ME ~ Decile"),
-#   lm(data = coeffs, formula = "MEBE ~ Decile"),
-#   lm(data = r.sq, formula = "ME ~ Decile"),
-#   lm(data = r.sq, formula = "MEBE ~ Decile"),
-#   title = "Title"
-# )
+
 ```
 
 ### 3. Joint test of CAPM
 
+**3. Estimate the CAPM jointly for the complete set of size portfolios, book-to-market portfolios as well as portfolios built on the intersections of size and book-to-market deciles. Test for joint significance of the intercept terms using the F-test.**
+
+-   Need to redo this. Look up how to do joint F-test of intercepts.
+
 ```{r}
-
-depvars <- cols[2:ncols] # dependent variables
-lc <- paste(depvars, collapse=" + ") # linear combination
-
-model <- lm(data = z, formula = paste("Market ~", lc))
-
-summary(model)
-
-fstat <- summary(model)$fstatistic
-
-pf(fstat["value"], fstat["numdf"], fstat["dendf"], lower.tail=F)
+# 
+# depvars <- cols[2:ncols] # dependent variables
+# lc <- paste(depvars, collapse=" + ") # linear combination
+# 
+# model <- lm(data = z, formula = paste(lc, "~ Market"))
+# 
+# summary(model)
+# 
+# fstat <- summary(model)$fstatistic
+# 
+# pf(fstat["value"], fstat["numdf"], fstat["dendf"], lower.tail=F)
 ```
 
 ```{r}
-hyp <- NULL # hypothesis
-for(var in depvars) hyp <- c(hyp, paste(var, "= 0"))
-
-library(car)
-summary(linearHypothesis(model, hyp))
+# hyp <- NULL # hypothesis
+# for(var in depvars) hyp <- c(hyp, paste(var, "= 0"))
+# 
+# library(car)
+# summary(linearHypothesis(model, hyp))
 ```
 
 ### 4. Period-Specific Betas
+
+**4. Use the 100 portfolios built on the intersections of size and book-to-market deciles and divide the sample in appropriate sub-periods. Specify a CAPM which allows for period specific betas and intercept terms. Estimate the model for these portfolios.**
+
+-   Need to redo this also. Estimate f-statistics of intercepts for all 100 portfolios.
+
+-   Include lagged market betas or only use time sub-sample? See lecture 4 page 29.
+
+-   Plot average alpha and f-statistic?
+
+-   Summarize different periods in a table.
+
+**(a) Do you find statistically significant evidence for time-varying market betas and intercept terms?**
+
+**(b) Analyze whether the inclusion of period-specific effects does increase the model's goodness-of-fit.**
+
+**(c) Do you find for particular size and book-to-market portfolios stronger time variations in market betas than for others?**
 
 ```{r}
 
@@ -202,16 +292,18 @@ preff <- years < 1992 # pre-Fama-French
 
 lc = paste(Rxy, collapse=" + ")
 
+# test before and after Fama-French paper
 print("Before Fama-French")
 p = preff
-fstat <- ftest(formula = paste("Market ~", lc), data = z[p, ])
+fstat <- ftest(formula = paste(lc, "~ Market"), data = z[p, ])
 print(fstat)
 
 
 print("After Fama-French")
 p = !preff
-fstat <- ftest(formula = paste("Market ~", lc), data = z[p, ])
+fstat <- ftest(formula = paste(lc, "~ Market"), data = z[p, ])
 print(fstat)
+
 
 # start and end years
 yend <- max(years) + 1
@@ -219,6 +311,7 @@ ybeg <- min(years)
 
 yspan <- yend - ybeg # year span
 
+# for divisions of 2, 5, and 9 years
 for (div in c(2, 5, 9)){
   
   cat("\n------------------------\n\n")
@@ -236,7 +329,7 @@ for (div in c(2, 5, 9)){
     
     print(sprintf(paste("(%d of %d)", pbeg, "to", pend), n, div))
     
-    fstat <- ftest(formula = paste("Market ~", lc), data = z[p, ])
+    fstat <- ftest(formula = paste(lc, "~ Market"), data = z[p, ])
     print(fstat)
 
   }
@@ -247,4 +340,30 @@ for (div in c(2, 5, 9)){
 
 ```{r}
 
+
 ```
+
+## B. Cross-sectional regressions
+
+**Use the data set portfolio_m analyzed in the previous section. In the following you have to analyze the cross-sectional implications of the CAPM.**
+
+### 1. Cross-sectional betas
+
+**Write R code to implement the First Pass regression which computes the cross-section of
+market betas, and save them together with the period-specific excess returns. Apply the
+code to compute the betas for the 100 size-book-to-market portfolios. Using the results
+to analyze the following issues:**
+
+Write a function to do the first pass and period specific.
+
+**(a) Evaluate the cross-sectional distribution of the estimated betas. Test whether the
+average betas are significantly different from one. Interpret your findings.**
+
+```{r}
+
+```
+
+**(b) Evaluate the cross-sectional distribution of the computed (time series) R\^2\'s. What can you learn from this analysis?**
+
+**(c) Evaluate the relationship between average excess returns and market betas. What
+would you expect from economic theory and what do you find?**
