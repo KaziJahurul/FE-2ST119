@@ -42,6 +42,7 @@ The following plots summarizes the descriptive statistics of size (ME) and book-
 
 ```{r}
 
+
 # describe portfolio
 descr <- describe(portfolio_m)
 
@@ -207,7 +208,7 @@ for (lab in c("ME", "MEBE")){
   
   plot(alpha[, lab],
        xlab = paste(lab, "Decile"),
-       ylab = "Excess Returns")
+       ylab = "Alpha")
   
   plot(coeffs[, lab],
        xlab = paste(lab, "Decile"),
@@ -219,10 +220,6 @@ for (lab in c("ME", "MEBE")){
 }
 ```
 
-```{r}
-
-```
-
 ### 3. Joint test of CAPM
 
 **3. Estimate the CAPM jointly for the complete set of size portfolios, book-to-market portfolios as well as portfolios built on the intersections of size and book-to-market deciles. Test for joint significance of the intercept terms using the F-test.**
@@ -230,38 +227,19 @@ for (lab in c("ME", "MEBE")){
 -   Need to redo this. Look up how to do joint F-test of intercepts.
 
 ```{r}
-# 
-# depvars <- cols[2:ncols] # dependent variables
-# lc <- paste(depvars, collapse=" + ") # linear combination
-# 
-# model <- lm(data = z, formula = paste(lc, "~ Market"))
-# 
-# summary(model)
-# 
-# fstat <- summary(model)$fstatistic
-# 
-# pf(fstat["value"], fstat["numdf"], fstat["dendf"], lower.tail=F)
-```
+depvars <- cols[2:ncols] # dependent variables
+formula = paste("cbind(", paste(depvars, collapse=", "), ") ~ Market")
 
-```{r}
-# hyp <- NULL # hypothesis
-# for(var in depvars) hyp <- c(hyp, paste(var, "= 0"))
-# 
-# library(car)
-# summary(linearHypothesis(model, hyp))
+model = lm(formula, data=z)
+
+anova(model)
 ```
 
 ### 4. Period-Specific Betas
 
 **4. Use the 100 portfolios built on the intersections of size and book-to-market deciles and divide the sample in appropriate sub-periods. Specify a CAPM which allows for period specific betas and intercept terms. Estimate the model for these portfolios.**
 
--   Need to redo this also. Estimate f-statistics of intercepts for all 100 portfolios.
-
--   Include lagged market betas or only use time sub-sample? See lecture 4 page 29.
-
--   Plot average alpha and f-statistic?
-
--   Summarize different periods in a table.
+<https://en.wikipedia.org/wiki/Fama%E2%80%93MacBeth_regression>
 
 **(a) Do you find statistically significant evidence for time-varying market betas and intercept terms?**
 
@@ -271,38 +249,33 @@ for (lab in c("ME", "MEBE")){
 
 ```{r}
 
+formula = paste("cbind(", paste(Rxy, collapse=", "), ") ~ Market")
 
-ftest <- function(formula, data, lower.tail=F){
-  # run regression
-  model = lm(formula = formula, data=data)
-  
-  # get f-statistic
-  fstat <- summary(model)$fstatistic
-  
-  # calculate pvalue
-  fstat['pval'] <- pf(fstat["value"],
-                      fstat["numdf"], fstat["dendf"],
-                      lower.tail=lower.tail)
-  # return results
-  return(fstat)
-  
-}
 years <- z['year']
-preff <- years < 1992 # pre-Fama-French
 
-lc = paste(Rxy, collapse=" + ")
+preff <- years < 1960 # pre-Fama-French
 
 # test before and after Fama-French paper
-print("Before Fama-French")
-p = preff
-fstat <- ftest(formula = paste(lc, "~ Market"), data = z[p, ])
-print(fstat)
+print("Pre-CAPM (< 1960)")
+period = preff
+model <- lm(formula, data = z[period, ])
+print(anova(model))
+
+summ = summary(model)
+rsq <- NULL
+for (m in summ) rsq <- c(rsq, m$r.squared)
+cat("R-squared: mean", mean(rsq), "var", var(rsq), "\n")
 
 
-print("After Fama-French")
-p = !preff
-fstat <- ftest(formula = paste(lc, "~ Market"), data = z[p, ])
-print(fstat)
+print("Post-CAPM (> 1960)")
+period = !preff
+model <- lm(formula, data = z[period, ])
+print(anova(model))
+
+summ = summary(model)
+rsq <- NULL
+for (m in summ) rsq <- c(rsq, m$r.squared)
+cat("R-squared: mean", mean(rsq), "var", var(rsq), "\n")
 
 
 # start and end years
@@ -312,9 +285,13 @@ ybeg <- min(years)
 yspan <- yend - ybeg # year span
 
 # for divisions of 2, 5, and 9 years
-for (div in c(2, 5, 9)){
+for (div in c(2, 4, 8)){
   
-  cat("\n------------------------\n\n")
+  cat("\n\n",
+      "===============",
+      div, "equal partitions",
+      "===============",
+      "\n\n")
   
   pspan <- yspan / div # period span
   
@@ -325,22 +302,20 @@ for (div in c(2, 5, 9)){
     pend <- round(ybeg + n * pspan)
     
     # period filter
-    p <- (pbeg <= years) & (years < pend)
+    period <- (pbeg <= years) & (years < pend)
     
-    print(sprintf(paste("(%d of %d)", pbeg, "to", pend), n, div))
-    
-    fstat <- ftest(formula = paste(lc, "~ Market"), data = z[p, ])
-    print(fstat)
 
+    cat("\n", sprintf(paste("(%d of %d)", pbeg, "to", pend), n, div), '- ')
+    
+    model <- lm(formula, data = z[period, ])
+    print(anova(model))
+    
+    summ = summary(model)
+    rsq <- NULL
+    for (m in summ) rsq <- c(rsq, m$r.squared)
+    cat("R-squared: mean", mean(rsq), "var", var(rsq), "\n")
   }
 }
-
-
-```
-
-```{r}
-
-
 ```
 
 ## B. Cross-sectional regressions
@@ -349,21 +324,40 @@ for (div in c(2, 5, 9)){
 
 ### 1. Cross-sectional betas
 
-**Write R code to implement the First Pass regression which computes the cross-section of
-market betas, and save them together with the period-specific excess returns. Apply the
-code to compute the betas for the 100 size-book-to-market portfolios. Using the results
-to analyze the following issues:**
+**Write R code to implement the First Pass regression which computes the cross-section of market betas, and save them together with the period-specific excess returns. Apply the code to compute the betas for the 100 size-book-to-market portfolios. Using the results to analyze the following issues:**
 
 Write a function to do the first pass and period specific.
 
-**(a) Evaluate the cross-sectional distribution of the estimated betas. Test whether the
-average betas are significantly different from one. Interpret your findings.**
+**(a) Evaluate the cross-sectional distribution of the estimated betas. Test whether the average betas are significantly different from one. Interpret your findings.**
 
 ```{r}
 
+formula = paste("cbind(", paste(Rxy, collapse=", "), ") ~ Market")
+
+model = lm(formula, data=z)
+
+anova(model)
+
+summ <- summary(model)
+
+beta_Rxy <- matrix(NA, nrow=10, ncol=10)
+
+x = 1
+y = 1
+name <- paste("Response R", x, y, sep="")
+
+for (x in 1:10) {
+  for (y in 1:10) {
+    name <- paste("Response R", x, y, sep="")
+    
+    s <- summ[[name]] # model summary
+    beta_Rxy[x, y] <- s$coefficients["Market", "Estimate"]
+  }
+}
+
+View(beta_Rxy)
 ```
 
-**(b) Evaluate the cross-sectional distribution of the computed (time series) R\^2\'s. What can you learn from this analysis?**
+**(b) Evaluate the cross-sectional distribution of the computed (time series) R\^2's. What can you learn from this analysis?**
 
-**(c) Evaluate the relationship between average excess returns and market betas. What
-would you expect from economic theory and what do you find?**
+**(c) Evaluate the relationship between average excess returns and market betas. What would you expect from economic theory and what do you find?**
